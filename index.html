@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" data-theme="wood">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>島嶼手作 · 工藝選物與體驗</title>
+<meta name="description" content="精油、玉石、好茶、金工、木工、陶藝 — 島嶼職人手作選物、體驗課程與藝品競標。">
+
+<!-- ========================================================================
+  Supabase 官方 JS 套件（固定版本）
+========================================================================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
+<!-- ========================================================================
+  ★★★ 1. Supabase Client 初始化（請把你的金鑰貼在這裡）★★★
+  ------------------------------------------------------------------------
+  到 Supabase 後台 → 左下角 Project Settings → API：
+    ‧ Project URL      → 貼到 SUPABASE_URL
+    ‧ anon public key  → 貼到 SUPABASE_ANON_KEY
+  ⚠ 只能貼「anon public」那把，絕對不要貼「service_role」金鑰！
+    anon key 本來就是公開的，真正保護資料的是資料庫裡的 RLS（見 supabase-setup.sql）。
+
+  兩個欄位都留空 → 網站會以「示範模式」運作：資料只存在你自己的瀏覽器，
+  方便你先預覽所有畫面與流程。填好後就會自動切換為正式連線模式。
+========================================================================= -->
+<script>
+  const SUPABASE_URL = "https://xtswckeajtsndgvvsplj.supabase.co";        // 例如 "https://abcdefghijk.supabase.co"
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0c3dja2VhanRzbmRndnZzcGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4OTMwNTMsImV4cCI6MjEwODQ2OTA1M30.T4NR0tAQ5beJRAfXhww0sK_k42EYzG9PRLPe_SzUOss";   // 例如 "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+
+  const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      })
+    : null;
+  const DEMO = !sb;   // true = 示範模式（尚未填入金鑰）
+</script>
+
+<!-- ========================================================================
+  2. 商店基本資料（銀行帳號、聯絡方式請改成你自己的）
+========================================================================= -->
+<script>
+  const SHOP = {
+    name: '島嶼手作',
+    en: 'ISLAND HANDMADE STUDIO',
+    bank: {
+      code: '812',
+      bankName: '台新國際商業銀行',
+      branch: '大安分行',
+      account: '2888-01-0012345-6',
+      holder: '島嶼手作工藝有限公司'
+    },
+    phone: '02-2345-6789',
+    email: 'hello@island-handmade.tw',
+    line: '@islandhandmade',
+    address: '台北市大安區青田街 7 巷 3 號 1 樓',
+    hours: '週三至週日 11:00 – 19:00（週一、二公休）',
+    freeShip: 3000,     // 滿額免運（需與 SQL 內 orders_guard 一致）
+    shipTransfer: 80,   // 匯款宅配運費
+    shipCvs: 60         // 超商取貨付款運費
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* =====================================================================
+   色調（三種主題）
+===================================================================== */
+:root, [data-theme="wood"]{
+  --bg:#f5f0e8; --bg2:#ece4d7; --surface:#fffdf9; --surface2:#faf6ef;
+  --ink:#2a241f; --ink2:#4a4038; --muted:#8a7d70; --line:#e3d9ca; --line2:#d3c6b3;
+  --accent:#8a6240; --accent-ink:#fffaf3; --accent-soft:#f1e6d7;
+  --g-lit:#6a7a55; --g-lit-soft:#e9ecdf; --g-craft:#9b6a42; --g-craft-soft:#f3e5d4;
+  --danger:#a5493b; --ok:#5d7d5f; --warn:#b07a2a;
+  --shadow:0 1px 2px rgba(60,40,20,.05),0 10px 32px -12px rgba(60,40,20,.16);
+  --hero-tint:#e9dfcf;
+}
+[data-theme="obsidian"]{
+  --bg:#131415; --bg2:#1a1b1d; --surface:#1e2022; --surface2:#232528;
+  --ink:#ece8e0; --ink2:#cbc6bc; --muted:#8e8a82; --line:#2e3134; --line2:#3a3e42;
+  --accent:#a7c3b0; --accent-ink:#121314; --accent-soft:#233029;
+  --g-lit:#9ec4ad; --g-lit-soft:#1f2c25; --g-craft:#d2ae73; --g-craft-soft:#30291d;
+  --danger:#e08a7a; --ok:#9ec4ad; --warn:#d2ae73;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 36px -14px rgba(0,0,0,.6);
+  --hero-tint:#1c1e1f;
+}
+[data-theme="morning"]{
+  --bg:#f4f6f1; --bg2:#e8eee4; --surface:#ffffff; --surface2:#f8faf6;
+  --ink:#21302a; --ink2:#3e4d45; --muted:#73827a; --line:#dbe3d6; --line2:#c9d5c4;
+  --accent:#5b7c5f; --accent-ink:#ffffff; --accent-soft:#e3ece0;
+  --g-lit:#4c7f63; --g-lit-soft:#e0eee5; --g-craft:#a27953; --g-craft-soft:#f4ece2;
+  --danger:#b0503f; --ok:#4c7f63; --warn:#a27953;
+  --shadow:0 1px 2px rgba(40,60,40,.05),0 10px 32px -12px rgba(40,70,50,.16);
+  --hero-tint:#e5ece0;
+}
+
+/* =====================================================================
+   基礎
+===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;font-weight:400;line-height:1.75;letter-spacing:.02em;transition:background .5s,color .5s;min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+.serif{font-family:"Noto Serif TC",serif}
+.en{font-family:"Cormorant Garamond",serif;letter-spacing:.18em}
+::selection{background:var(--accent);color:var(--accent-ink)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+main{flex:1}
+.hide{display:none!important}
+@media (max-width:640px){.wrap{padding:0 16px}}
+
+/* =====================================================================
+   頁首
+===================================================================== */
+.topbar{background:var(--ink);color:var(--bg);font-size:12px;letter-spacing:.2em;text-align:center;padding:7px 16px}
+@media (max-width:640px){.topbar{font-size:11px;letter-spacing:.08em}.topbar .tb-x{display:none}}
+.site-header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.2) blur(14px);-webkit-backdrop-filter:saturate(1.2) blur(14px);border-bottom:1px solid var(--line);transition:background .5s,border-color .5s}
+.header-inner{display:flex;align-items:center;gap:28px;height:76px}
+.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.brand-mark{width:38px;height:38px;border:1px solid var(--ink);display:grid;place-items:center;font-family:"Noto Serif TC",serif;font-size:17px;font-weight:600}
+.brand-text b{display:block;font-family:"Noto Serif TC",serif;font-weight:600;font-size:18px;letter-spacing:.32em;line-height:1.2}
+.brand-text small{display:block;font-family:"Cormorant Garamond",serif;font-size:10.5px;letter-spacing:.28em;color:var(--muted);line-height:1.3}
+.nav{display:flex;align-items:center;gap:4px;margin:0 auto}
+.nav-link{position:relative;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;font-size:14.5px;letter-spacing:.14em;color:var(--ink2);border-radius:999px;transition:color .25s,background .25s}
+.nav-link:hover{color:var(--ink)}
+.nav-link::after{content:"";position:absolute;left:14px;right:14px;bottom:4px;height:1px;background:currentColor;transform:scaleX(0);transition:transform .3s}
+.nav-link.is-active{color:var(--accent)}
+.nav-link.is-active::after{transform:scaleX(1)}
+.nav-link .chev{width:10px;height:10px;transition:transform .25s}
+.nav-group{position:relative}
+.nav-group:hover .chev,.nav-group.open .chev{transform:rotate(180deg)}
+.nav-group[data-group="literati"].is-active>.nav-link{color:var(--g-lit);background:var(--g-lit-soft)}
+.nav-group[data-group="craft"].is-active>.nav-link{color:var(--g-craft);background:var(--g-craft-soft)}
+.nav-group.is-active>.nav-link::after{display:none}
+.dd{position:absolute;top:calc(100% + 10px);left:50%;transform:translate(-50%,6px);min-width:240px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);padding:10px;opacity:0;visibility:hidden;transition:opacity .22s,transform .22s,visibility .22s;z-index:60}
+.dd::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
+.nav-group:hover .dd,.nav-group.open .dd,.nav-group:focus-within .dd{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.dd-head{padding:8px 12px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.dd-head .en{font-size:11px;color:var(--muted)}
+.dd-head b{display:block;font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.24em;font-size:15px}
+.dd-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-left:2px solid transparent;transition:background .2s,color .2s,border-color .2s}
+.dd-item span:first-child{font-size:14.5px;letter-spacing:.16em}
+.dd-item .en{font-size:10.5px;color:var(--muted)}
+.nav-group[data-group="literati"] .dd-item:hover{background:var(--g-lit-soft)}
+.nav-group[data-group="craft"] .dd-item:hover{background:var(--g-craft-soft)}
+.nav-group[data-group="literati"] .dd-item.is-active{background:var(--g-lit);color:var(--bg);border-left-color:var(--g-lit)}
+.nav-group[data-group="craft"] .dd-item.is-active{background:var(--g-craft);color:var(--bg);border-left-color:var(--g-craft)}
+.dd-item.is-active .en{color:inherit;opacity:.8}
+.header-tools{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.icon-btn{position:relative;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:1px solid transparent;border-radius:999px;font-size:13px;letter-spacing:.12em;color:var(--ink2);transition:border-color .2s,background .2s,color .2s}
+.icon-btn:hover{border-color:var(--line2);color:var(--ink)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.4}
+.badge-dot{position:absolute;top:3px;right:3px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:10.5px;letter-spacing:0;display:grid;place-items:center;font-weight:500}
+.theme-sw{position:relative}
+.theme-sw .icon-btn{border-color:var(--line2)}
+.theme-pop{position:absolute;right:0;top:calc(100% + 10px);width:270px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);padding:14px;opacity:0;visibility:hidden;transform:translateY(6px);transition:all .22s;z-index:70}
+.theme-sw.open .theme-pop{opacity:1;visibility:visible;transform:none}
+.pop-title{font-size:11px;letter-spacing:.3em;color:var(--muted);padding:2px 6px 10px}
+.theme-opt{display:flex;align-items:center;gap:12px;width:100%;padding:10px 8px;text-align:left;border:1px solid transparent;transition:background .2s,border-color .2s}
+.theme-opt:hover{background:var(--surface2)}
+.theme-opt.is-active{border-color:var(--accent);background:var(--accent-soft)}
+.theme-opt .sw{width:38px;height:38px;flex-shrink:0;border-radius:50%;border:1px solid rgba(0,0,0,.08);position:relative;overflow:hidden}
+.theme-opt .sw i{position:absolute;inset:50% 0 0 0}
+.theme-opt b{display:block;font-weight:500;font-size:14px;letter-spacing:.16em}
+.theme-opt small{display:block;color:var(--muted);font-size:11.5px;letter-spacing:.06em}
+.theme-opt .check{margin-left:auto;width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;opacity:0}
+.theme-opt.is-active .check{opacity:1}
+.menu-btn{display:none}
+@media (max-width:1080px){
+  .nav{display:none}
+  .menu-btn{display:inline-flex}
+  .header-inner{gap:12px;justify-content:space-between}
+  .icon-btn .lbl{display:none}
+}
+@media (max-width:420px){.brand-text small{display:none}.brand-text b{font-size:16px;letter-spacing:.2em}.icon-btn{padding:0 9px}}
+
+/* 手機抽屜選單 */
+.drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:80}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(360px,88vw);background:var(--surface);z-index:90;transform:translateX(100%);transition:transform .35s cubic-bezier(.2,.7,.2,1);overflow-y:auto;padding:22px 22px 40px}
+body.drawer-open .drawer{transform:none}
+body.drawer-open .drawer-mask{opacity:1;visibility:visible}
+.drawer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.drawer h4{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.3em;font-size:14px;margin:22px 0 8px;display:flex;align-items:center;gap:10px}
+.drawer h4 i{width:18px;height:2px;display:inline-block}
+.drawer .d-lit h4 i{background:var(--g-lit)} .drawer .d-craft h4 i{background:var(--g-craft)}
+.drawer a{display:flex;justify-content:space-between;padding:12px 12px;border-bottom:1px solid var(--line);letter-spacing:.16em;font-size:15px}
+.drawer a .en{font-size:11px;color:var(--muted)}
+.drawer .d-lit a.is-active{background:var(--g-lit);color:var(--bg)}
+.drawer .d-craft a.is-active{background:var(--g-craft);color:var(--bg)}
+.drawer .d-other a.is-active{background:var(--accent);color:var(--accent-ink)}
+.drawer a.is-active .en{color:inherit}
+
+/* =====================================================================
+   通用元件
+===================================================================== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 30px;background:var(--ink);color:var(--bg);border:1px solid var(--ink);font-size:14px;letter-spacing:.28em;transition:background .25s,color .25s,border-color .25s,opacity .2s;white-space:nowrap}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn.ghost:hover{border-color:var(--ink);background:transparent;color:var(--ink)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.accent:hover{filter:brightness(1.07)}
+.btn.sm{min-height:36px;padding:0 16px;font-size:12.5px;letter-spacing:.16em}
+.btn.block{width:100%}
+.btn.danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5}
+.btn-custom{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;border:1px dashed var(--accent);color:var(--accent);background:var(--accent-soft);font-size:14px;letter-spacing:.2em;transition:.25s}
+.btn-custom:hover{background:var(--accent);color:var(--accent-ink);border-style:solid}
+.btn-custom svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5}
+.eyebrow{font-family:"Cormorant Garamond",serif;font-size:13px;letter-spacing:.34em;color:var(--muted);text-transform:uppercase}
+.sec{padding:96px 0}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:44px;flex-wrap:wrap}
+.sec-head h2{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(26px,3vw,34px);letter-spacing:.24em;line-height:1.4;margin-top:8px}
+.sec-head p{color:var(--muted);max-width:440px;font-size:14px}
+.sec-num{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:18px;color:var(--accent);margin-right:12px}
+.link-more{font-size:13px;letter-spacing:.24em;color:var(--ink2);border-bottom:1px solid var(--line2);padding-bottom:4px;transition:.2s}
+.link-more:hover{color:var(--accent);border-color:var(--accent)}
+.divider{height:1px;background:var(--line);border:0}
+.crumb{font-size:12.5px;letter-spacing:.16em;color:var(--muted);padding:28px 0 0}
+.crumb a:hover{color:var(--accent)}
+.crumb span{margin:0 10px;opacity:.5}
+.tag{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:3px 10px;font-size:11.5px;letter-spacing:.14em;border:1px solid var(--line2);color:var(--ink2);background:var(--surface)}
+.tag.lit{border-color:transparent;background:var(--g-lit-soft);color:var(--g-lit)}
+.tag.craft{border-color:transparent;background:var(--g-craft-soft);color:var(--g-craft)}
+.tag.ok{border-color:transparent;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.tag.warn{border-color:transparent;background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.tag.danger{border-color:transparent;background:color-mix(in srgb,var(--danger) 13%,transparent);color:var(--danger)}
+.tag.muted{opacity:.7}
+.empty{padding:80px 20px;text-align:center;color:var(--muted);letter-spacing:.16em}
+.empty .serif{font-size:20px;color:var(--ink2);margin-bottom:10px;letter-spacing:.3em}
+.loading{padding:120px 0;text-align:center;color:var(--muted);letter-spacing:.3em;font-size:13px}
+.loading i{display:inline-block;width:6px;height:6px;margin:0 4px;border-radius:50%;background:var(--accent);animation:dot 1.2s infinite}
+.loading i:nth-child(2){animation-delay:.15s}.loading i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:none}}
+.fade-in{animation:fade .6s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* 表單 */
+.field{display:block;margin-bottom:18px}
+.field>span{display:block;font-size:12.5px;letter-spacing:.18em;color:var(--ink2);margin-bottom:8px}
+.field>span em{font-style:normal;color:var(--danger);margin-left:4px}
+.field small{display:block;color:var(--muted);font-size:12px;margin-top:6px;letter-spacing:.04em}
+.input,.select,.textarea{width:100%;min-height:48px;padding:12px 14px;background:var(--surface);border:1px solid var(--line2);border-radius:0;outline:none;transition:border-color .2s,box-shadow .2s;font-size:15px;letter-spacing:.04em}
+.textarea{min-height:120px;resize:vertical;line-height:1.7}
+.select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 21px,calc(100% - 15px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:40px}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.radio-cards{display:grid;gap:10px}
+.radio-card{display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--line2);background:var(--surface);cursor:pointer;transition:.2s}
+.radio-card:hover{border-color:var(--ink2)}
+.radio-card input{margin-top:5px;accent-color:var(--accent)}
+.radio-card.on{border-color:var(--accent);background:var(--accent-soft)}
+.radio-card b{display:block;font-weight:500;letter-spacing:.14em}
+.radio-card small{color:var(--muted);font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 16px;border:1px solid var(--line2);background:var(--surface);font-size:14px;letter-spacing:.06em;transition:.2s;text-align:left;line-height:1.4}
+.chip small{display:block;font-size:11.5px;color:var(--muted)}
+.chip:hover{border-color:var(--ink2)}
+.chip.on{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.chip.on small{color:inherit;opacity:.85}
+.chip[disabled]{opacity:.4;pointer-events:none;text-decoration:line-through}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--line2);background:var(--surface)}
+.qty button{width:44px;height:46px;font-size:18px;color:var(--ink2)}
+.qty button:hover{color:var(--accent)}
+.qty input{width:52px;height:46px;text-align:center;border:0;background:transparent;outline:none;font-size:15px}
+
+/* =====================================================================
+   首頁
+===================================================================== */
+.hero{position:relative;padding:72px 0 96px;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center}
+.hero h1{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(34px,4.6vw,58px);line-height:1.45;letter-spacing:.14em;margin:18px 0 26px}
+.hero .lead{color:var(--ink2);max-width:470px;font-size:15.5px;line-height:2}
+.hero-cta{display:flex;gap:12px;margin-top:38px;flex-wrap:wrap}
+.hero-visual{position:relative;aspect-ratio:4/5;max-height:640px;justify-self:end;width:100%;max-width:500px}
+.hero-visual .main{position:absolute;inset:0 0 10% 12%;background:var(--hero-tint);box-shadow:var(--shadow);overflow:hidden}
+.hero-visual .main img{width:100%;height:100%;object-fit:cover}
+.hero-visual .sub{position:absolute;left:0;bottom:0;width:42%;aspect-ratio:4/5;border:8px solid var(--bg);box-shadow:var(--shadow);overflow:hidden;transition:border-color .5s}
+.hero-visual .sub img{width:100%;height:100%;object-fit:cover}
+.hero-visual .vert{position:absolute;right:-6px;top:6%;writing-mode:vertical-rl;font-family:"Noto Serif TC",serif;letter-spacing:.6em;font-size:14px;color:var(--ink2);background:var(--bg);padding:16px 8px;transition:background .5s}
+.hero-stats{display:flex;gap:44px;margin-top:56px;padding-top:28px;border-top:1px solid var(--line);max-width:470px}
+.hero-stats b{display:block;font-family:"Cormorant Garamond",serif;font-size:32px;font-weight:500;line-height:1}
+.hero-stats span{font-size:12px;letter-spacing:.2em;color:var(--muted)}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:48px}.hero-visual{justify-self:center;max-width:420px}.hero{padding:44px 0 64px}}
+
+.col-band{border-top:1px solid var(--line)}
+.col-intro{display:grid;grid-template-columns:280px 1fr;gap:56px;align-items:start}
+.col-intro .side{position:sticky;top:110px}
+.col-intro .side .line{width:36px;height:2px;margin:22px 0}
+.col-intro h2{font-family:"Noto Serif TC",serif;font-weight:500;font-size:36px;letter-spacing:.32em;line-height:1.3;margin-top:10px}
+.col-intro p{color:var(--muted);font-size:14px;line-height:2}
+.col-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.col-tile{position:relative;display:block;background:var(--surface);overflow:hidden;transition:transform .4s}
+.col-tile .ph{aspect-ratio:4/5;overflow:hidden;background:var(--bg2)}
+.col-tile .ph img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.col-tile:hover .ph img{transform:scale(1.05)}
+.col-tile .cap{padding:18px 18px 20px;display:flex;justify-content:space-between;align-items:flex-end;border-top:2px solid transparent;transition:border-color .3s}
+.col-tile .cap b{font-family:"Noto Serif TC",serif;font-weight:500;font-size:19px;letter-spacing:.3em}
+.col-tile .cap .en{font-size:11px;color:var(--muted);display:block}
+.col-tile .cap .arrow{width:34px;height:34px;border:1px solid var(--line2);border-radius:50%;display:grid;place-items:center;transition:.3s}
+.col-tile .cap .arrow svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5}
+.lit .col-tile:hover .cap{border-color:var(--g-lit)} .lit .col-tile:hover .arrow{background:var(--g-lit);color:var(--bg);border-color:var(--g-lit)}
+.craft .col-tile:hover .cap{border-color:var(--g-craft)} .craft .col-tile:hover .arrow{background:var(--g-craft);color:var(--bg);border-color:var(--g-craft)}
+.lit .line{background:var(--g-lit)} .craft .line{background:var(--g-craft)}
+.lit .sec-num{color:var(--g-lit)} .craft .sec-num{color:var(--g-craft)}
+@media (max-width:900px){.col-intro{grid-template-columns:1fr;gap:28px}.col-intro .side{position:static}.col-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.col-tile .cap{padding:12px}.col-tile .cap b{font-size:15px;letter-spacing:.15em}.col-tile .cap .arrow{display:none}}
+@media (max-width:520px){.col-tiles{grid-template-columns:1fr 1fr}}
+
+/* 商品卡 */
+.grid-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:40px 24px}
+.pcard{display:block}
+.pcard .ph{position:relative;aspect-ratio:4/5;background:var(--bg2);overflow:hidden}
+.pcard .ph img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.pcard:hover .ph img{transform:scale(1.04)}
+.pcard .ph .tag{position:absolute;left:12px;top:12px}
+.pcard .ph .soldout{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);display:grid;place-items:center;font-family:"Noto Serif TC",serif;letter-spacing:.5em;font-size:16px}
+.pcard .meta{padding:16px 2px 0}
+.pcard .cat{font-size:11.5px;letter-spacing:.24em;color:var(--muted)}
+.pcard h3{font-family:"Noto Serif TC",serif;font-weight:500;font-size:17px;letter-spacing:.12em;margin:4px 0 2px;line-height:1.5}
+.pcard .sub{font-size:12.5px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .price{margin-top:10px;font-family:"Cormorant Garamond",serif;font-size:19px;letter-spacing:.08em}
+.price small{font-family:"Noto Sans TC",sans-serif;font-size:11px;letter-spacing:.1em;color:var(--muted);margin-right:4px}
+
+/* 分類頁 */
+.cat-hero{padding:40px 0 56px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:end;border-bottom:1px solid var(--line)}
+.cat-hero h1{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(32px,4vw,48px);letter-spacing:.3em;line-height:1.3;margin-top:12px}
+.cat-hero p{color:var(--ink2);line-height:2;font-size:14.5px}
+.cat-tabs{display:flex;gap:8px;margin-top:26px;flex-wrap:wrap}
+.cat-tab{padding:9px 20px;border:1px solid var(--line2);font-size:13.5px;letter-spacing:.2em;transition:.2s}
+.cat-tab:hover{border-color:var(--ink2)}
+.lit .cat-tab.is-active{background:var(--g-lit);border-color:var(--g-lit);color:var(--bg)}
+.craft .cat-tab.is-active{background:var(--g-craft);border-color:var(--g-craft);color:var(--bg)}
+@media (max-width:800px){.cat-hero{grid-template-columns:1fr;gap:20px}}
+
+/* 商品詳情 */
+.pd{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;padding:32px 0 96px}
+.pd-img{position:sticky;top:100px;align-self:start;aspect-ratio:4/5;background:var(--bg2);overflow:hidden}
+.pd-img img{width:100%;height:100%;object-fit:cover}
+.pd h1{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(26px,3vw,34px);letter-spacing:.14em;line-height:1.5;margin:14px 0 6px}
+.pd .sub{color:var(--muted);letter-spacing:.06em}
+.pd .price-lg{font-family:"Cormorant Garamond",serif;font-size:34px;letter-spacing:.06em;margin:26px 0 6px}
+.pd .stock{font-size:13px;letter-spacing:.14em;color:var(--muted)}
+.pd .buy{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 14px}
+.pd .buy .btn{flex:1;min-width:150px}
+.pd .desc{margin-top:36px;padding-top:28px;border-top:1px solid var(--line);color:var(--ink2);line-height:2.1;font-size:15px;white-space:pre-line}
+.spec{margin-top:28px;border-top:1px solid var(--line)}
+.spec div{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.spec dt{color:var(--muted);letter-spacing:.18em}
+@media (max-width:900px){.pd{grid-template-columns:minmax(0,1fr);gap:32px}.pd-img{position:static}}
+
+/* 課程 */
+.course-list{display:grid;gap:28px}
+.ccard{display:grid;grid-template-columns:380px 1fr;background:var(--surface);border:1px solid var(--line);transition:box-shadow .3s,border-color .3s}
+.ccard:hover{box-shadow:var(--shadow);border-color:var(--line2)}
+.ccard .ph{aspect-ratio:4/3;overflow:hidden;background:var(--bg2)}
+.ccard .ph img{width:100%;height:100%;object-fit:cover}
+.ccard .body{padding:34px 38px;display:flex;flex-direction:column}
+.ccard h3{font-family:"Noto Serif TC",serif;font-weight:500;font-size:24px;letter-spacing:.16em;margin:10px 0 6px}
+.ccard .facts{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}
+.ccard .facts span{display:block;color:var(--muted);font-size:11.5px;letter-spacing:.2em}
+.ccard .bottom{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media (max-width:860px){.ccard{grid-template-columns:1fr}.ccard .body{padding:24px 20px}}
+.course-detail{display:grid;grid-template-columns:1fr 420px;gap:56px;padding:32px 0 96px;align-items:start}
+.course-detail .ph{aspect-ratio:16/10;overflow:hidden;background:var(--bg2);margin-bottom:34px}
+.course-detail .ph img{width:100%;height:100%;object-fit:cover}
+.reg-card{position:sticky;top:100px;background:var(--surface);border:1px solid var(--line);padding:30px;box-shadow:var(--shadow)}
+.reg-card h3{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.3em;font-size:18px;margin-bottom:4px}
+.reg-total{display:flex;justify-content:space-between;align-items:baseline;padding:18px 0;margin:6px 0 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.reg-total b{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500}
+@media (max-width:960px){.course-detail{grid-template-columns:minmax(0,1fr)}.reg-card{position:static;padding:22px 18px}}
+
+/* 競標 */
+.a-card{display:block;background:var(--surface);border:1px solid var(--line);transition:.3s}
+.a-card:hover{box-shadow:var(--shadow)}
+.a-card .ph{position:relative;aspect-ratio:1/1;background:var(--bg2);overflow:hidden}
+.a-card .ph img{width:100%;height:100%;object-fit:cover}
+.a-card .cd-pill{position:absolute;left:12px;bottom:12px;background:color-mix(in srgb,var(--ink) 82%,transparent);color:var(--bg);font-size:12.5px;padding:5px 12px;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.a-card .body{padding:20px}
+.a-card h3{font-family:"Noto Serif TC",serif;font-weight:500;font-size:18px;letter-spacing:.12em}
+.a-card .row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}
+.a-card .row span{font-size:11.5px;color:var(--muted);letter-spacing:.18em;display:block}
+.a-card .row b{font-family:"Cormorant Garamond",serif;font-size:24px;font-weight:500}
+.auction-top{display:grid;grid-template-columns:1fr 440px;gap:56px;padding:32px 0 48px;align-items:start}
+.auction-top .ph{aspect-ratio:1/1;background:var(--bg2);overflow:hidden}
+.auction-top .ph img{width:100%;height:100%;object-fit:cover}
+.bid-panel{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.bid-panel .hd{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.bid-panel .hd b{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.3em}
+.bid-panel .cd{font-variant-numeric:tabular-nums;font-size:15px;letter-spacing:.06em;color:var(--danger)}
+.bid-panel .bd{padding:24px 26px}
+.cur-price span{font-size:12px;letter-spacing:.24em;color:var(--muted)}
+.cur-price b{display:block;font-family:"Cormorant Garamond",serif;font-size:46px;font-weight:500;line-height:1.1;margin:4px 0;font-variant-numeric:tabular-nums}
+.cur-meta{display:flex;gap:18px;font-size:13px;color:var(--ink2);flex-wrap:wrap}
+.need-box{margin:20px 0 16px;padding:12px 14px;background:var(--accent-soft);font-size:13.5px;letter-spacing:.06em}
+.bid-input{display:flex;align-items:stretch;border:1px solid var(--line2);background:var(--surface2)}
+.bid-input span{display:grid;place-items:center;padding:0 16px;font-family:"Cormorant Garamond",serif;font-size:18px;color:var(--muted);border-right:1px solid var(--line)}
+.bid-input input{flex:1;min-width:0;height:60px;border:0;background:transparent;outline:none;font-family:"Cormorant Garamond",serif;font-size:30px;padding:0 16px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.bid-input:focus-within{border-color:var(--accent)}
+.bid-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 16px}
+.bid-steps button{padding:10px 0;border:1px solid var(--line2);font-size:13px;letter-spacing:.06em;background:var(--surface)}
+.bid-steps button:hover{border-color:var(--accent);color:var(--accent)}
+.bid-rules{font-size:12.5px;color:var(--muted);line-height:1.9;margin-top:16px;padding-left:16px}
+.auction-bottom{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding-bottom:96px}
+.panel{background:var(--surface);border:1px solid var(--line)}
+.panel .hd{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel .hd b{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.24em}
+.panel .hd small{font-size:11.5px;color:var(--muted);letter-spacing:.1em}
+.bid-list{max-height:420px;overflow:auto}
+.bid-row{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:13px 22px;border-bottom:1px solid var(--line);font-size:14px}
+.bid-row:first-child{background:var(--accent-soft)}
+.bid-row .n{font-family:"Cormorant Garamond",serif;color:var(--muted)}
+.bid-row b{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:500;font-variant-numeric:tabular-nums}
+.bid-row time{display:block;font-size:11.5px;color:var(--muted)}
+.chat-list{height:360px;overflow:auto;padding:16px 22px;display:flex;flex-direction:column;gap:12px}
+.chat-msg{max-width:88%}
+.chat-msg .who{font-size:11.5px;color:var(--muted);letter-spacing:.06em}
+.chat-msg .txt{background:var(--surface2);border:1px solid var(--line);padding:9px 13px;font-size:14px;line-height:1.6;word-break:break-word;margin-top:3px}
+.chat-msg.me{align-self:flex-end;text-align:right}
+.chat-msg.me .txt{background:var(--accent-soft);border-color:transparent;text-align:left}
+.chat-form{display:grid;grid-template-columns:110px 1fr auto;gap:8px;padding:14px;border-top:1px solid var(--line)}
+.chat-form .input{min-height:42px;padding:8px 12px;font-size:14px}
+.ended-box{padding:22px 26px;background:var(--surface2);border-top:1px solid var(--line)}
+@media (max-width:960px){.auction-top{grid-template-columns:minmax(0,1fr);gap:28px}.auction-bottom{grid-template-columns:minmax(0,1fr)}.chat-form{grid-template-columns:1fr auto}.chat-form .nick{grid-column:1/-1}}
+
+/* 購物車 / 結帳 */
+.cart-layout{display:grid;grid-template-columns:1fr 380px;gap:48px;padding:32px 0 96px;align-items:start}
+.cart-item{display:grid;grid-template-columns:96px 1fr auto;gap:20px;padding:22px 0;border-bottom:1px solid var(--line);align-items:center}
+.cart-item .ph{aspect-ratio:4/5;background:var(--bg2);overflow:hidden}
+.cart-item .ph img{width:100%;height:100%;object-fit:cover}
+.cart-item h4{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.1em}
+.cart-item .qty button{width:34px;height:36px}.cart-item .qty input{width:38px;height:36px}
+.summary{background:var(--surface);border:1px solid var(--line);padding:28px;position:sticky;top:100px}
+.summary h3{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.3em;font-size:17px;margin-bottom:18px}
+.sum-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;color:var(--ink2)}
+.sum-row.total{border-top:1px solid var(--line);margin-top:10px;padding-top:16px;color:var(--ink);font-size:15px}
+.sum-row.total b{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500}
+.bank-box{background:var(--surface2);border:1px solid var(--line);padding:18px 20px;margin:12px 0 18px;font-size:14px;line-height:2}
+.bank-box dt{display:inline-block;width:84px;color:var(--muted);letter-spacing:.14em}
+.bank-box dd{display:inline}
+.co-step{background:var(--surface);border:1px solid var(--line);padding:28px 30px;margin-bottom:22px}
+.co-step h3{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.24em;font-size:17px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.co-step h3 i{font-family:"Cormorant Garamond",serif;font-style:italic;color:var(--accent);font-size:20px}
+@media (max-width:960px){.cart-layout{grid-template-columns:minmax(0,1fr)}.summary{position:static}.co-step{padding:22px 18px}}
+.done-box{max-width:640px;margin:56px auto 96px;background:var(--surface);border:1px solid var(--line);padding:48px 44px;text-align:center}
+.done-box .no{font-family:"Cormorant Garamond",serif;font-size:34px;letter-spacing:.14em;margin:10px 0 4px}
+.done-box .mark{width:64px;height:64px;margin:0 auto 18px;border:1px solid var(--accent);border-radius:50%;display:grid;place-items:center;color:var(--accent)}
+.done-box .mark svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.5}
+@media (max-width:560px){.done-box{padding:32px 20px}}
+
+/* 查詢 */
+.lookup{max-width:720px;margin:0 auto;padding:40px 0 96px}
+.tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:30px}
+.tabs button{flex:1;padding:16px;font-size:14.5px;letter-spacing:.24em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--accent);border-color:var(--accent)}
+.result-card{margin-top:28px;background:var(--surface);border:1px solid var(--line);padding:28px}
+.result-card .rhd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.result-card .rhd b{font-family:"Cormorant Garamond",serif;font-size:24px;letter-spacing:.1em}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;font-size:14px;padding:6px 0}
+.kv dt{color:var(--muted);letter-spacing:.14em}
+.timeline{display:flex;margin:22px 0 8px}
+.timeline div{flex:1;text-align:center;font-size:12px;letter-spacing:.1em;color:var(--muted);position:relative;padding-top:20px}
+.timeline div::before{content:"";position:absolute;top:5px;left:50%;width:10px;height:10px;border-radius:50%;background:var(--line2);transform:translateX(-50%);z-index:1}
+.timeline div::after{content:"";position:absolute;top:9px;left:-50%;width:100%;height:2px;background:var(--line2)}
+.timeline div:first-child::after{display:none}
+.timeline div.on{color:var(--accent)}
+.timeline div.on::before,.timeline div.on::after{background:var(--accent)}
+
+/* 頁尾 */
+.site-footer{background:var(--bg2);border-top:1px solid var(--line);padding:72px 0 32px;margin-top:auto;transition:background .5s}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:40px}
+.site-footer h5{font-size:12px;letter-spacing:.3em;color:var(--muted);font-weight:400;margin-bottom:16px}
+.site-footer li{list-style:none;margin-bottom:9px;font-size:14px;letter-spacing:.1em}
+.site-footer li a:hover{color:var(--accent)}
+.foot-bottom{display:flex;justify-content:space-between;gap:16px;margin-top:56px;padding-top:24px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);letter-spacing:.12em;flex-wrap:wrap}
+@media (max-width:860px){.foot-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.foot-grid{grid-template-columns:1fr}}
+
+/* 彈窗 / 提示 */
+.modal-root{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-root.open{display:flex}
+.modal-mask{position:absolute;inset:0;background:rgba(15,12,10,.5);backdrop-filter:blur(3px);animation:fadeM .25s}
+.modal{position:relative;width:100%;max-width:560px;max-height:calc(100vh - 40px);overflow:auto;background:var(--surface);box-shadow:0 30px 80px -20px rgba(0,0,0,.45);animation:pop .3s cubic-bezier(.2,.7,.2,1)}
+.modal.wide{max-width:860px}
+.modal .m-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:28px 32px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:2}
+.modal .m-hd h3{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.24em;font-size:20px;line-height:1.5}
+.modal .m-hd p{font-size:13px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+.modal .m-bd{padding:24px 32px 30px}
+.modal .m-ft{display:flex;gap:10px;justify-content:flex-end;padding:0 32px 28px;flex-wrap:wrap}
+.x-btn{width:38px;height:38px;flex-shrink:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%}
+.x-btn:hover{border-color:var(--ink)}
+.x-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.6;fill:none}
+@keyframes fadeM{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.98)}}
+@media (max-width:560px){.modal .m-hd{padding:22px 18px 14px}.modal .m-bd{padding:18px}.modal .m-ft{padding:0 18px 20px}}
+.toast-wrap{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:460px}
+.toast{background:var(--ink);color:var(--bg);padding:13px 22px;font-size:14px;letter-spacing:.08em;box-shadow:0 14px 40px -10px rgba(0,0,0,.5);animation:pop .3s;pointer-events:auto;text-align:center}
+.toast.err{background:var(--danger);color:#fff}
+.toast.ok{background:var(--ok);color:#fff}
+.demo-bar{position:fixed;right:16px;bottom:16px;z-index:150;background:var(--surface);border:1px solid var(--line2);box-shadow:var(--shadow);font-size:12px;padding:8px 14px;letter-spacing:.08em;color:var(--ink2);max-width:calc(100% - 32px)}
+.demo-bar b{color:var(--warn);font-weight:500}
+
+/* =====================================================================
+   後台
+===================================================================== */
+body.is-admin .topbar,body.is-admin .site-header,body.is-admin .site-footer{display:none}
+.adm{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.adm-side{background:var(--ink);color:var(--bg);padding:28px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+.adm-side .brand-mark{border-color:var(--bg)}
+.adm-side .brand-text small{color:color-mix(in srgb,var(--bg) 60%,transparent)}
+.adm-nav{margin-top:36px;display:grid;gap:2px}
+.adm-nav a{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;font-size:14px;letter-spacing:.16em;color:color-mix(in srgb,var(--bg) 72%,transparent);transition:.2s}
+.adm-nav a:hover{color:var(--bg);background:color-mix(in srgb,var(--bg) 8%,transparent)}
+.adm-nav a.on{background:var(--accent);color:var(--accent-ink)}
+.adm-nav .cnt{min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;display:grid;place-items:center;letter-spacing:0}
+.adm-side .foot{margin-top:36px;padding-top:20px;border-top:1px solid color-mix(in srgb,var(--bg) 14%,transparent);display:grid;gap:8px;font-size:12.5px}
+.adm-side .foot a,.adm-side .foot button{color:color-mix(in srgb,var(--bg) 70%,transparent);text-align:left;letter-spacing:.12em}
+.adm-side .foot a:hover,.adm-side .foot button:hover{color:var(--bg)}
+.adm-main{padding:36px 40px 80px;min-width:0}
+.adm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.adm-head h1{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.24em;font-size:26px}
+.adm-head p{color:var(--muted);font-size:13px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat{background:var(--surface);border:1px solid var(--line);padding:22px}
+.stat span{font-size:12px;letter-spacing:.2em;color:var(--muted)}
+.stat b{display:block;font-family:"Cormorant Garamond",serif;font-size:40px;font-weight:500;line-height:1.2}
+.stat a{font-size:12px;color:var(--accent);letter-spacing:.12em}
+.table-wrap{background:var(--surface);border:1px solid var(--line);overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
+.tbl th{text-align:left;font-weight:400;font-size:12px;letter-spacing:.16em;color:var(--muted);padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface2);white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.click{cursor:pointer}
+.tbl tr.click:hover td{background:var(--surface2)}
+.tbl .thumb{width:48px;height:60px;object-fit:cover;background:var(--bg2)}
+.tbl .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;letter-spacing:.04em}
+.tbl .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl .acts{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
+.mini-select{padding:6px 28px 6px 10px;border:1px solid var(--line2);background:var(--surface);font-size:13px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 14px) 13px,calc(100% - 10px) 13px;background-size:4px 4px;background-repeat:no-repeat}
+.switch{position:relative;width:42px;height:24px;border-radius:999px;background:var(--line2);transition:.2s;flex-shrink:0;display:inline-block}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch.on{background:var(--ok)}
+.switch.on::after{left:21px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-bar button{padding:7px 16px;border:1px solid var(--line2);font-size:13px;letter-spacing:.12em;background:var(--surface)}
+.filter-bar button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.msg-card{background:var(--surface);border:1px solid var(--line);padding:22px 24px;margin-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:16px;border-left:3px solid var(--line2)}
+.msg-card.unread{border-left-color:var(--danger)}
+.msg-card.read{border-left-color:var(--warn)}
+.msg-card.contacted{border-left-color:var(--ok);opacity:.85}
+.msg-card .mh{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.msg-card .mh b{color:var(--ink);font-size:15px;letter-spacing:.1em;font-weight:500}
+.msg-card .mc{margin-top:12px;white-space:pre-wrap;line-height:1.9;font-size:14.5px;word-break:break-word}
+.msg-card .acts{display:flex;flex-direction:column;gap:6px}
+.img-up{display:flex;gap:16px;align-items:center}
+.img-up img{width:84px;height:105px;object-fit:cover;background:var(--bg2);border:1px solid var(--line)}
+.date-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.date-chips span{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 12px;background:var(--accent-soft);font-size:13px}
+.date-chips button{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:14px;line-height:1}
+.date-chips button:hover{background:var(--danger);color:#fff}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg2)}
+.login-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);padding:44px 40px;box-shadow:var(--shadow)}
+.login-card h1{font-family:"Noto Serif TC",serif;font-weight:500;letter-spacing:.3em;font-size:22px;margin:22px 0 6px}
+.adm-mobile-bar{display:none}
+@media (max-width:960px){
+  .adm{grid-template-columns:1fr}
+  .adm-side{position:static;height:auto;padding:16px}
+  .adm-side .brand,.adm-side .foot{display:none}
+  .adm-nav{margin:0;display:flex;overflow-x:auto;gap:4px}
+  .adm-nav a{white-space:nowrap;padding:10px 12px;font-size:13px}
+  .adm-main{padding:24px 16px 60px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .adm-mobile-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:var(--bg);font-size:13px;letter-spacing:.12em}
+  .msg-card{grid-template-columns:1fr}.msg-card .acts{flex-direction:row;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">全館滿 NT$ 3,000 免運<span class="tb-x"> · 支援銀行轉帳與超商取貨付款</span> · 競標僅限匯款寄出</div>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="#/" class="brand" aria-label="回首頁">
+      <span class="brand-mark">島</span>
+      <span class="brand-text"><b>島嶼手作</b><small>ISLAND HANDMADE STUDIO</small></span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="主選單">
+      <a class="nav-link" href="#/" data-nav="home">首頁</a>
+      <div class="nav-group" data-group="literati">
+        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">文人雅士<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <div class="dd" role="menu">
+          <div class="dd-head"><span class="en">LITERATI</span><b>文人雅士</b></div>
+          <a class="dd-item" href="#/c/oil" data-cat="oil"><span>精油專區</span><span class="en">AROMA</span></a>
+          <a class="dd-item" href="#/c/jade" data-cat="jade"><span>玉石專區</span><span class="en">JADE</span></a>
+          <a class="dd-item" href="#/c/tea" data-cat="tea"><span>好茶專區</span><span class="en">TEA</span></a>
+        </div>
+      </div>
+      <div class="nav-group" data-group="craft">
+        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">精緻工藝<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <div class="dd" role="menu">
+          <div class="dd-head"><span class="en">FINE CRAFT</span><b>精緻工藝</b></div>
+          <a class="dd-item" href="#/c/metal" data-cat="metal"><span>金工專區</span><span class="en">METAL</span></a>
+          <a class="dd-item" href="#/c/wood" data-cat="wood"><span>木工專區</span><span class="en">WOOD</span></a>
+          <a class="dd-item" href="#/c/pottery" data-cat="pottery"><span>陶藝專區</span><span class="en">CERAMIC</span></a>
+        </div>
+      </div>
+      <a class="nav-link" href="#/courses" data-nav="courses">體驗課程</a>
+      <a class="nav-link" href="#/auctions" data-nav="auctions">藝品競標</a>
+      <a class="nav-link" href="#/lookup" data-nav="lookup">訂單查詢</a>
+      <a class="nav-link" href="#/contact" data-nav="contact">聯絡我們</a>
+    </nav>
+
+    <div class="header-tools">
+      <a class="icon-btn" href="#/cart" aria-label="購物車">
+        <svg viewBox="0 0 24 24"><path d="M5 7h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>
+        <span class="lbl">購物車</span>
+        <span class="badge-dot hide" id="cart-count">0</span>
+      </a>
+      <div class="theme-sw" id="theme-sw">
+        <button class="icon-btn" data-act="theme-toggle" aria-label="色調切換" aria-haspopup="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none" opacity=".35"/></svg>
+          <span class="lbl">色調</span>
+        </button>
+        <div class="theme-pop" role="menu">
+          <p class="pop-title">色調切換 · THEME</p>
+          <button class="theme-opt" data-act="set-theme" data-val="wood">
+            <span class="sw" style="background:#f5f0e8"><i style="background:#8a6240"></i></span>
+            <span><b>大地木質</b><small>溫暖木質棕 · 米白</small></span>
+            <svg class="check" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></svg>
+          </button>
+          <button class="theme-opt" data-act="set-theme" data-val="obsidian">
+            <span class="sw" style="background:#2a2c2e"><i style="background:#0f1011"></i></span>
+            <span><b>曜石沉穩</b><small>深灰 · 黑玉石</small></span>
+            <svg class="check" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></svg>
+          </button>
+          <button class="theme-opt" data-act="set-theme" data-val="morning">
+            <span class="sw" style="background:#f4f6f1"><i style="background:#5b7c5f"></i></span>
+            <span><b>晨曦精油</b><small>柔和草本綠 · 淺白</small></span>
+            <svg class="check" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="icon-btn menu-btn" data-act="drawer-open" aria-label="開啟選單">
+        <svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="drawer-mask" data-act="drawer-close"></div>
+<aside class="drawer" id="drawer" aria-label="手機選單">
+  <div class="drawer-top">
+    <span class="brand"><span class="brand-mark">島</span><span class="brand-text"><b>島嶼手作</b></span></span>
+    <button class="x-btn" data-act="drawer-close" aria-label="關閉"><svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg></button>
+  </div>
+  <div class="d-other"><a href="#/" data-nav="home">首頁<span class="en">HOME</span></a></div>
+  <div class="d-lit"><h4><i></i>文人雅士</h4>
+    <a href="#/c/oil" data-cat="oil">精油專區<span class="en">AROMA</span></a>
+    <a href="#/c/jade" data-cat="jade">玉石專區<span class="en">JADE</span></a>
+    <a href="#/c/tea" data-cat="tea">好茶專區<span class="en">TEA</span></a>
+  </div>
+  <div class="d-craft"><h4><i></i>精緻工藝</h4>
+    <a href="#/c/metal" data-cat="metal">金工專區<span class="en">METAL</span></a>
+    <a href="#/c/wood" data-cat="wood">木工專區<span class="en">WOOD</span></a>
+    <a href="#/c/pottery" data-cat="pottery">陶藝專區<span class="en">CERAMIC</span></a>
+  </div>
+  <div class="d-other"><h4><i style="background:var(--accent)"></i>探索</h4>
+    <a href="#/courses" data-nav="courses">體驗課程<span class="en">WORKSHOP</span></a>
+    <a href="#/auctions" data-nav="auctions">藝品競標<span class="en">AUCTION</span></a>
+    <a href="#/lookup" data-nav="lookup">訂單查詢<span class="en">TRACKING</span></a>
+    <a href="#/contact" data-nav="contact">聯絡我們<span class="en">CONTACT</span></a>
+    <a href="#/cart" data-nav="cart">購物車<span class="en">CART</span></a>
+  </div>
+</aside>
+
+<main id="app"><div class="loading"><i></i><i></i><i></i></div></main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <span class="brand"><span class="brand-mark">島</span><span class="brand-text"><b>島嶼手作</b><small>ISLAND HANDMADE STUDIO</small></span></span>
+        <p style="margin-top:20px;color:var(--muted);font-size:13.5px;line-height:2;max-width:300px">尋訪島嶼職人，以手的溫度，留住時間的痕跡。每一件作品都獨一無二，也歡迎與我們聊聊你的專屬訂製。</p>
+      </div>
+      <div><h5>文人雅士</h5><ul><li><a href="#/c/oil">精油專區</a></li><li><a href="#/c/jade">玉石專區</a></li><li><a href="#/c/tea">好茶專區</a></li></ul></div>
+      <div><h5>精緻工藝</h5><ul><li><a href="#/c/metal">金工專區</a></li><li><a href="#/c/wood">木工專區</a></li><li><a href="#/c/pottery">陶藝專區</a></li></ul></div>
+      <div><h5>服務</h5><ul><li><a href="#/courses">體驗課程報名</a></li><li><a href="#/auctions">藝品競標</a></li><li><a href="#/lookup">訂單 / 報名查詢</a></li><li><a href="#/contact">聯絡我們</a></li></ul></div>
+    </div>
+    <div class="foot-bottom"><span id="foot-addr"></span><span>© <span id="year"></span> ISLAND HANDMADE STUDIO</span></div>
+  </div>
+</footer>
+
+<div class="modal-root" id="modal-root" aria-modal="true" role="dialog"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   3. 小工具
+========================================================================= */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const app = $('#app');
+
+// 防 XSS：所有來自資料庫或使用者的文字，一律經過 esc() 再放進畫面
+const esc = (v) => String(v ?? '').replace(/[&<>"'`]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
+const money = (n) => 'NT$ ' + Number(n || 0).toLocaleString('zh-TW');
+const pad = (n) => String(n).padStart(2, '0');
+const digits = (s) => String(s || '').replace(/\D/g, '');
+const phoneOk = (s) => /^(09\d{8}|0\d{8,9}|886\d{8,10})$/.test(digits(s));
+const tz = { timeZone: 'Asia/Taipei' };
+const fmtTime = (t) => t ? new Date(t).toLocaleString('zh-TW', { ...tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+const fmtDate = (d) => { if (!d) return ''; const x = new Date(d + 'T00:00:00+08:00'); return x.toLocaleDateString('zh-TW', { ...tz, month: 'long', day: 'numeric', weekday: 'short' }); };
+const todayStr = () => new Date().toLocaleDateString('sv-SE', tz); // YYYY-MM-DD（台灣時間）
+const safeUrl = (u) => (typeof u === 'string' && (/^https:\/\//.test(u) || /^data:image\//.test(u))) ? u : '';
+
+// 安全的瀏覽器儲存（私密模式等狀況下不會讓網站壞掉）
+const store = {
+  get(k, d = null) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+// 產生訂單 / 報名編號，例如 S261025K7QW3P（S=商店 R=報名）
+function genCode(prefix) {
+  const d = todayStr().replace(/-/g, '').slice(2);
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const rnd = new Uint32Array(6); crypto.getRandomValues(rnd);
+  return prefix + d + [...rnd].map(x => abc[x % abc.length]).join('');
+}
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  $('#toast-wrap').appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, type === 'err' ? 4200 : 2800);
+}
+
+const ICON = {
+  chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M8 10h8M8 13h5"/></svg>',
+  arrow: '<svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x: '<svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg>'
+};
+
+/* =========================================================================
+   4. 內建插畫（未上傳圖片時使用，SVG 繪製，永遠不會破圖）
+========================================================================= */
+const ART = (() => {
+  const wrap = (bg, inner, defs = '') => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"><defs>${defs}<radialGradient id="lt" cx=".3" cy=".2" r="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="400" height="500" fill="${bg}"/><rect width="400" height="500" fill="url(#lt)"/><rect y="372" width="400" height="128" fill="#000" opacity=".035"/>${inner}</svg>`);
+  const shadow = (cx, cy, rx, ry = 12) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#3a2a1a" opacity=".16"/>`;
+  const spots = (n, cx, cy, rx, ry, seed) => { let s = seed, o = ''; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280; for (let i = 0; i < n; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()); o += `<circle cx="${(cx + Math.cos(a) * rx * d).toFixed(1)}" cy="${(cy + Math.sin(a) * ry * d).toFixed(1)}" r="${(0.8 + r() * 2.2).toFixed(1)}" fill="#cfd5dc" opacity="${(0.35 + r() * 0.55).toFixed(2)}"/>`; } return o; };
+  return {
+    oil: wrap('#ebe2d4', shadow(200, 412, 78) +
+      `<path d="M280 412 C 284 360, 296 320, 318 262" stroke="#6d7b57" stroke-width="2" fill="none"/>
+       <ellipse cx="300" cy="330" rx="14" ry="6" transform="rotate(-50 300 330)" fill="#7d8b63"/><ellipse cx="292" cy="360" rx="13" ry="5.5" transform="rotate(40 292 360)" fill="#6d7b57"/><ellipse cx="310" cy="296" rx="12" ry="5" transform="rotate(-60 310 296)" fill="#8b9a70"/><ellipse cx="318" cy="276" rx="10" ry="4.5" transform="rotate(30 318 276)" fill="#7d8b63"/>
+       <rect x="146" y="214" width="108" height="198" rx="20" fill="url(#am)"/>
+       <rect x="178" y="190" width="44" height="30" fill="#4a250c"/>
+       <rect x="170" y="158" width="60" height="36" rx="3" fill="#2b2420"/>
+       <path d="M184 160 C 184 120, 186 104, 200 100 C 214 104, 216 120, 216 160 Z" fill="#3a312b"/>
+       <rect x="162" y="282" width="76" height="82" fill="#f4ede1" opacity=".94"/>
+       <rect x="176" y="300" width="48" height="2" fill="#8a7a68"/><rect x="183" y="312" width="34" height="1.5" fill="#b3a593"/><circle cx="200" cy="338" r="9" fill="none" stroke="#8a6240" stroke-width="1.2"/>
+       <rect x="158" y="228" width="7" height="170" rx="3.5" fill="#fff" opacity=".2"/>`,
+      `<linearGradient id="am" x1="0" x2="1"><stop offset="0" stop-color="#5e2e0e"/><stop offset=".45" stop-color="#b86a2c"/><stop offset="1" stop-color="#5a2a0b"/></linearGradient>`),
+    jade: wrap('#e1e4dc', shadow(200, 405, 110, 16) +
+      `<circle cx="200" cy="262" r="98" fill="none" stroke="url(#jd)" stroke-width="36"/>
+       <path d="M128 200 A 98 98 0 0 1 220 166" stroke="#fff" stroke-opacity=".28" stroke-width="7" fill="none" stroke-linecap="round"/>
+       <path d="M276 320 A 98 98 0 0 1 250 344" stroke="#000" stroke-opacity=".2" stroke-width="10" fill="none" stroke-linecap="round"/>
+       <ellipse cx="318" cy="398" rx="22" ry="14" fill="#2c4537"/><ellipse cx="312" cy="393" rx="8" ry="4" fill="#fff" opacity=".25"/>`,
+      `<linearGradient id="jd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4c7360"/><stop offset=".5" stop-color="#1d3328"/><stop offset="1" stop-color="#36584a"/></linearGradient>`),
+    tea: wrap('#e8e0d1', `<ellipse cx="200" cy="398" rx="112" ry="20" fill="#7a5233"/><ellipse cx="200" cy="392" rx="112" ry="20" fill="#9a6c45"/>` +
+      `<path d="M128 250 L 142 378 Q 200 396 258 378 L 272 250 Z" fill="url(#cup)"/>
+       <ellipse cx="200" cy="250" rx="72" ry="15" fill="#efe7da"/><ellipse cx="200" cy="251" rx="64" ry="11" fill="#b8892f"/><ellipse cx="190" cy="249" rx="22" ry="3" fill="#fff" opacity=".25"/>
+       <path d="M176 222 C 166 200, 190 190, 178 166" stroke="#a89a86" stroke-width="2" fill="none" opacity=".6" stroke-linecap="round"/>
+       <path d="M212 226 C 202 202, 228 190, 214 160" stroke="#a89a86" stroke-width="2" fill="none" opacity=".45" stroke-linecap="round"/>
+       <ellipse cx="72" cy="426" rx="11" ry="4.5" transform="rotate(-20 72 426)" fill="#56663a"/><ellipse cx="92" cy="436" rx="10" ry="4" transform="rotate(25 92 436)" fill="#4a5a32"/><ellipse cx="330" cy="430" rx="12" ry="4.5" transform="rotate(15 330 430)" fill="#5d6d40"/>`,
+      `<linearGradient id="cup" x1="0" x2="1"><stop offset="0" stop-color="#cfc2ac"/><stop offset=".5" stop-color="#f3ece1"/><stop offset="1" stop-color="#c8bba4"/></linearGradient>`),
+    metal: wrap('#e4e1dc', shadow(205, 392, 120, 14) +
+      `<circle cx="168" cy="262" r="74" fill="none" stroke="url(#ag)" stroke-width="16"/>
+       <circle cx="238" cy="262" r="74" fill="none" stroke="url(#au)" stroke-width="16"/>
+       <path d="M168 188 A 74 74 0 0 1 214 204" fill="none" stroke="url(#ag)" stroke-width="16"/>
+       <circle cx="168" cy="262" r="74" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-dasharray="3 9"/>
+       <circle cx="238" cy="262" r="74" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2" stroke-dasharray="3 9"/>`,
+      `<linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f2f0"/><stop offset=".5" stop-color="#9c9c98"/><stop offset="1" stop-color="#e2e2de"/></linearGradient><linearGradient id="au" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ead09a"/><stop offset=".5" stop-color="#a47c3c"/><stop offset="1" stop-color="#e2c385"/></linearGradient>`),
+    wood: wrap('#e7dbc9', shadow(200, 352, 160, 20) +
+      `<ellipse cx="200" cy="318" rx="152" ry="50" fill="#4f311b"/>
+       <ellipse cx="200" cy="306" rx="150" ry="46" fill="url(#wd)"/>
+       <ellipse cx="200" cy="308" rx="120" ry="33" fill="#7d4f2c"/>
+       <path d="M96 304 Q 200 270 304 304 M110 316 Q 200 290 292 318 M124 296 Q 200 276 280 296" stroke="#5e3a20" stroke-width="1.3" fill="none" opacity=".55"/>
+       <ellipse cx="172" cy="296" rx="30" ry="17" fill="#ece0cf"/><ellipse cx="172" cy="290" rx="28" ry="12" fill="#f6eee2"/>
+       <ellipse cx="232" cy="304" rx="28" ry="16" fill="#b9877c"/><ellipse cx="232" cy="298" rx="26" ry="11" fill="#cf9f94"/>
+       <circle cx="228" cy="296" r="2" fill="#6d7b57"/>`,
+      `<linearGradient id="wd" x1="0" x2="1"><stop offset="0" stop-color="#6e4526"/><stop offset=".5" stop-color="#a26b3e"/><stop offset="1" stop-color="#6a4224"/></linearGradient>`),
+    pottery: wrap('#e5dbcd', shadow(200, 418, 88) +
+      `<path d="M200 168 C 214 120, 228 92, 248 52 M214 128 C 230 118, 244 116, 262 104 M206 148 C 192 130, 178 124, 160 116" stroke="#4a3a2c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+       <circle cx="249" cy="52" r="4" fill="#c98f6b"/><circle cx="262" cy="104" r="3.5" fill="#c98f6b"/><circle cx="160" cy="116" r="3.5" fill="#d9a585"/>
+       <path d="M176 160 L224 160 L221 188 Q 292 232 282 330 Q 272 414 200 418 Q 128 414 118 330 Q 108 232 179 188 Z" fill="url(#vs)"/>
+       <path d="M179 188 Q 108 232 118 300 Q 140 292 150 314 Q 164 282 186 306 Q 200 280 216 304 Q 236 284 250 310 Q 266 290 282 304 Q 290 232 221 188 Z" fill="#7d8a63" opacity=".55"/>
+       <ellipse cx="200" cy="161" rx="24" ry="5" fill="#3c2c20"/>
+       <path d="M140 250 Q 134 300 146 360" stroke="#fff" stroke-opacity=".18" stroke-width="8" fill="none" stroke-linecap="round"/>`,
+      `<linearGradient id="vs" x1="0" x2="1"><stop offset="0" stop-color="#5a3f2b"/><stop offset=".5" stop-color="#9a7350"/><stop offset="1" stop-color="#57402d"/></linearGradient>`),
+    'course-wood': wrap('#e9dccb', shadow(200, 404, 140, 14) +
+      `<rect x="70" y="330" width="260" height="62" fill="#8d5c34"/><rect x="70" y="322" width="260" height="14" fill="#a8744a"/>
+       <path d="M80 352 Q 200 340 320 356 M80 372 Q 200 362 320 376" stroke="#6a4224" stroke-width="1.2" fill="none" opacity=".6"/>
+       <g transform="rotate(-28 200 230)"><ellipse cx="200" cy="140" rx="34" ry="48" fill="#b98352"/><ellipse cx="200" cy="146" rx="24" ry="36" fill="#9c6a3e"/><rect x="192" y="182" width="16" height="150" rx="8" fill="#b98352"/></g>
+       <path d="M262 300 c 10 -18, 30 -10, 24 4 c -5 11, -20 6, -14 -3" stroke="#d8b48a" stroke-width="3" fill="none"/>
+       <path d="M108 304 c 8 -14, 26 -8, 20 4 c -4 9, -16 5, -11 -2" stroke="#cfa77a" stroke-width="3" fill="none"/>`),
+    'course-metal': wrap('#e2dfda', shadow(200, 404, 140, 14) +
+      `<rect x="70" y="340" width="260" height="52" rx="4" fill="#5e5a55"/><rect x="70" y="334" width="260" height="12" rx="3" fill="#77726c"/>
+       <circle cx="160" cy="316" r="30" fill="none" stroke="#d8d8d4" stroke-width="9"/><circle cx="212" cy="318" r="28" fill="none" stroke="#d5b77c" stroke-width="9"/>
+       <g transform="rotate(32 260 200)"><rect x="248" y="110" width="14" height="190" rx="5" fill="#8b6342"/><rect x="214" y="96" width="82" height="34" rx="5" fill="#4a4845"/><rect x="214" y="96" width="82" height="9" rx="4" fill="#6c6964"/></g>`),
+    'course-pottery': wrap('#e6dbcc', `<ellipse cx="200" cy="384" rx="150" ry="34" fill="#6f6b66"/><ellipse cx="200" cy="372" rx="150" ry="34" fill="#8b8781"/><ellipse cx="200" cy="364" rx="98" ry="20" fill="#a6a19a"/>` +
+      `<path d="M150 362 L 156 236 Q 200 222 244 236 L 250 362 Q 200 376 150 362 Z" fill="url(#cl)"/>
+       <ellipse cx="200" cy="236" rx="44" ry="10" fill="#9a6e4f"/><ellipse cx="200" cy="237" rx="34" ry="6" fill="#7e5639"/>
+       <path d="M154 270 Q 200 282 246 270 M153 300 Q 200 312 247 300 M152 330 Q 200 342 248 330" stroke="#8a5e40" stroke-width="1.5" fill="none" opacity=".6"/>`,
+      `<linearGradient id="cl" x1="0" x2="1"><stop offset="0" stop-color="#9a6c4b"/><stop offset=".5" stop-color="#c79a74"/><stop offset="1" stop-color="#946747"/></linearGradient>`),
+    'auction-jade': wrap('#dfe2d9', shadow(200, 418, 96) +
+      `<path d="M200 40 C 196 80, 204 110, 200 150" stroke="#9b3b2e" stroke-width="4" fill="none"/>
+       <circle cx="200" cy="150" r="7" fill="#9b3b2e"/>
+       <circle cx="200" cy="268" r="104" fill="url(#wj)"/>
+       <circle cx="200" cy="268" r="30" fill="#dfe2d9"/>
+       <path d="M130 236 C 150 196, 200 186, 236 204 C 262 218, 280 250, 270 286 M268 300 C 250 340, 196 352, 160 330 C 136 314, 124 288, 132 262" stroke="#c6c1ae" stroke-width="5" fill="none" stroke-linecap="round"/>
+       <path d="M150 230 c 10 -6, 18 0, 14 8 M246 318 c -8 8, -18 4, -15 -4" stroke="#bdb7a2" stroke-width="3" fill="none"/>
+       <path d="M200 422 l -8 40 M200 422 l 0 44 M200 422 l 8 40" stroke="#9b3b2e" stroke-width="2"/>
+       <path d="M200 372 L 200 422" stroke="#9b3b2e" stroke-width="4"/>`,
+      `<radialGradient id="wj" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#fbf9f0"/><stop offset=".7" stop-color="#e3dfcd"/><stop offset="1" stop-color="#cbc6b1"/></radialGradient>`),
+    'auction-bowl': wrap('#e2dcd1', shadow(200, 392, 120, 16) +
+      `<path d="M92 236 Q 104 366 200 380 Q 296 366 308 236 Z" fill="url(#tm)"/>
+       <ellipse cx="200" cy="236" rx="108" ry="30" fill="#8a5a33"/>
+       <ellipse cx="200" cy="238" rx="100" ry="25" fill="#1a1613"/>
+       <g clip-path="url(#rimclip)">${spots(70, 200, 240, 92, 21, 7)}</g>
+       <path d="M110 260 Q 150 330 200 344" stroke="#fff" stroke-opacity=".12" stroke-width="6" fill="none" stroke-linecap="round"/>
+       <g clip-path="url(#bowlclip)">${spots(36, 200, 300, 90, 52, 3).replace(/#cfd5dc/g, '#a9b0b8')}</g>
+       <rect x="168" y="378" width="64" height="12" rx="3" fill="#b8a184"/>`,
+      `<clipPath id="rimclip"><ellipse cx="200" cy="238" rx="100" ry="25"/></clipPath><clipPath id="bowlclip"><path d="M92 236 Q 104 366 200 380 Q 296 366 308 236 Z"/></clipPath><linearGradient id="tm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a221d"/><stop offset=".85" stop-color="#14100d"/><stop offset="1" stop-color="#6b4a2f"/></linearGradient>`)
+  };
+})();
+const imgOf = (x) => safeUrl(x && x.image_url) || ART[x && (x.art || x.category)] || ART.pottery;
+
+/* =========================================================================
+   5. 分類設定
+========================================================================= */
+const CATS = {
+  oil:     { name: '精油', full: '精油專區', en: 'AROMA · ESSENTIAL OIL', group: 'literati', desc: '以島嶼植物為本，低溫蒸餾萃取的單方與複方精油。一滴香氣，讓書房、茶席與寢室慢慢安靜下來。' },
+  jade:    { name: '玉石', full: '玉石專區', en: 'JADE · STONE', group: 'literati', desc: '花蓮閃玉、和闐玉與天然礦石。玉不琢不成器，我們只做最少的雕琢，留住石頭本身的溫潤。' },
+  tea:     { name: '好茶', full: '好茶專區', en: 'TEA · LEAVES', group: 'literati', desc: '高山烏龍、東方美人、蜜香紅茶。與小農直接合作，每一批茶都親自杯測，只選我們自己也想天天喝的。' },
+  metal:   { name: '金工', full: '金工專區', en: 'METAL · SMITHING', group: 'craft', desc: '純銀、黃銅與 K 金，以手鍛、槌目、鏨刻成形。戴在身上的小物，也能承載一段專屬的故事。' },
+  wood:    { name: '木工', full: '木工專區', en: 'WOOD · CRAFT', group: 'craft', desc: '黑胡桃、櫻桃木、台灣檜木。保留刀痕與木紋，以蜂蠟與植物油養護，越用越有光澤。' },
+  pottery: { name: '陶藝', full: '陶藝專區', en: 'CERAMIC · KILN', group: 'craft', desc: '柴燒、穴窯與手捏陶器。火與土的偶然，讓每一件作品都無法複製，是器，也是風景。' }
+};
+const GROUPS = {
+  literati: { name: '文人雅士', en: 'LITERATI', cats: ['oil', 'jade', 'tea'], desc: '一爐香、一方玉、一盞茶。文人書房裡的雅事，是讓心沉靜下來的日常儀式。' },
+  craft:    { name: '精緻工藝', en: 'FINE CRAFT', cats: ['metal', 'wood', 'pottery'], desc: '金屬的鍛打、木材的刨削、陶土的焚燒。三種材質，三種與時間對話的方式。' }
+};
+const ORDER_STATUS = ['待付款', '待確認匯款', '已付款', '待出貨', '已出貨', '已完成', '已取消'];
+const REG_STATUS = ['待確認', '已確認', '已完成', '已取消'];
+const MSG_STATUS = ['未讀', '已讀', '已聯絡'];
+const statusTag = (s) => {
+  const map = { '待付款': 'warn', '待確認匯款': 'warn', '已付款': 'ok', '待出貨': 'warn', '已出貨': 'ok', '已完成': 'ok', '已取消': 'danger', '待確認': 'warn', '已確認': 'ok', '未讀': 'danger', '已讀': 'warn', '已聯絡': 'ok' };
+  return `<span class="tag ${map[s] || ''}">${esc(s)}</span>`;
+};
+
+/* =========================================================================
+   6. 資料層 — 正式模式（Supabase）
+   -------------------------------------------------------------------------
+   【個資安全設計】
+   ‧ orders / registrations / messages / bidders 這四張含個資的表，
+     本程式「只有 insert」，而且 insert 後「不接 .select()」（不回讀資料）。
+   ‧ 程式碼裡沒有任何「匿名撈取全站私訊 / 報名 / 訂單」的函式。
+     後台的 list() 雖然會讀取，但資料庫的 RLS 只允許 is_admin() 的帳號讀到資料，
+     訪客就算在 F12 Console 自己呼叫 sb.from('messages').select('*')，也只會得到錯誤或空陣列。
+
+   ▶ 如何在 Supabase 後台設定 RLS（執行 supabase-setup.sql 就會自動設好，以下是手動檢查方法）：
+     1. 左側選單 Table Editor → 點 registrations（或 messages）→ 右上角確認「RLS enabled」是開啟狀態
+     2. 左側 Authentication → Policies → 找到 registrations / messages
+     3. 應該只會看到兩條規則：
+          INSERT  → 套用角色 anon, authenticated   （訪客可以送出報名 / 私訊）
+          ALL     → 套用角色 authenticated，USING 條件 is_admin()   （只有管理員可讀、改、刪）
+     4. 若你想用最簡單的寫法（不用 admins 名單），SELECT 規則可設為：
+          Target roles: authenticated    USING expression: true
+        但這樣「任何註冊的帳號」都能讀，所以務必關閉 Authentication → Providers → Email 的
+        「Allow new users to sign up」。我們提供的 SQL 用 is_admin() 名單，更安全。
+========================================================================= */
+function unwrap(res) {
+  if (res.error) {
+    const m = res.error.message || String(res.error);
+    if (/JWT|jwt expired|Invalid Refresh Token/i.test(m) && S.route[0] === 'admin') kickOut();
+    if (/duplicate key/i.test(m)) throw Object.assign(new Error('編號重複，請再試一次'), { dup: true });
+    if (/row-level security|permission denied/i.test(m)) throw new Error('權限不足，操作已被資料庫拒絕');
+    throw new Error(m);
+  }
+  return res.data;
+}
+const SupaDB = {
+  async products() { return unwrap(await sb.from('products').select('*').eq('active', true).order('sort').order('created_at')); },
+  async courses() { return unwrap(await sb.from('courses').select('*').eq('active', true).order('sort').order('created_at')); },
+  async auctions() { return unwrap(await sb.from('auctions').select('*').eq('active', true).order('end_at')); },
+  async auction(id) { return unwrap(await sb.from('auctions').select('*').eq('id', id).maybeSingle()); },
+  // 出價紀錄：只選公開欄位（資料庫也只開放這幾欄給訪客）
+  async bids(aid) { return unwrap(await sb.from('bids').select('id,amount,bidder_alias,created_at').eq('auction_id', aid).order('amount', { ascending: false }).limit(30)); },
+  async chat(aid) { return unwrap(await sb.from('auction_chat').select('id,nickname,content,created_at').eq('auction_id', aid).order('created_at', { ascending: true }).limit(200)); },
+  async sendChat(row) { unwrap(await sb.from('auction_chat').insert(row)); },
+  async seats(cid) { return unwrap(await sb.rpc('course_seats', { p_course_id: cid })) || []; },
+
+  // ▼▼▼ 個資寫入：只有 INSERT，沒有 SELECT ▼▼▼
+  async createRegistration(row) { unwrap(await sb.from('registrations').insert(row)); },
+  async createOrder(row) { unwrap(await sb.from('orders').insert(row)); },
+  async createMessage(row) { unwrap(await sb.from('messages').insert(row)); },
+  async registerBidder(row) { unwrap(await sb.from('bidders').insert(row)); },
+  // ▲▲▲ 個資寫入結束 ▲▲▲
+
+  // 出價一律走資料庫 RPC，資料庫會在寫入當下再驗證一次價格與時間
+  async placeBid(aid, token, amount) { return unwrap(await sb.rpc('place_bid', { p_auction_id: aid, p_token: token, p_amount: amount })); },
+  async finalize() { try { return unwrap(await sb.rpc('finalize_auctions')); } catch (e) { return 0; } },
+  async myResult(aid, token) { return unwrap(await sb.rpc('my_auction_result', { p_auction_id: aid, p_token: token })); },
+  // 查詢：必須「編號＋電話」同時正確，資料庫只回傳非敏感欄位
+  async lookupOrder(no, phone) { return unwrap(await sb.rpc('lookup_order', { p_order_no: no, p_phone: phone })); },
+  async lookupReg(no, phone) { return unwrap(await sb.rpc('lookup_registration', { p_reg_no: no, p_phone: phone })); },
+  async submitLast5(no, phone, l5) { return unwrap(await sb.rpc('submit_transfer_last5', { p_order_no: no, p_phone: phone, p_last5: l5 })); },
+  subscribe(aid, onAuction, onChat) {
+    const ch = sb.channel('auction-' + aid)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'auctions', filter: 'id=eq.' + aid }, p => onAuction(p.new))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'auction_chat', filter: 'auction_id=eq.' + aid }, p => onChat(p.new))
+      .subscribe();
+    return () => sb.removeChannel(ch);
+  },
+
+  // ---- 管理員（以下每一個請求，資料庫都會用 RLS 的 is_admin() 再檢查一次） ----
+  async session() { const { data } = await sb.auth.getSession(); return data && data.session; },
+  async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw new Error('帳號或密碼錯誤'); return data.session; },
+  async signOut() { try { await sb.auth.signOut(); } catch (e) {} },
+  async isAdmin() { const { data, error } = await sb.rpc('is_admin'); return !error && data === true; },
+  async list(table) {
+    let q = sb.from(table).select('*');
+    q = ['products', 'courses'].includes(table) ? q.order('sort').order('created_at') : q.order('created_at', { ascending: false });
+    return unwrap(await q.limit(1000));
+  },
+  async save(table, row) {
+    const { id, ...rest } = row;
+    if (id) unwrap(await sb.from(table).update(rest).eq('id', id));
+    else unwrap(await sb.from(table).insert(rest));
+  },
+  async update(table, id, patch) { unwrap(await sb.from(table).update(patch).eq('id', id)); },
+  async remove(table, id) { unwrap(await sb.from(table).delete().eq('id', id)); },
+  async adminBids(aid) { return unwrap(await sb.from('bids').select('id,amount,bidder_alias,created_at,bidders(name,phone,email,address)').eq('auction_id', aid).order('amount', { ascending: false })); },
+  async upload(file) {
+    const ext = ((file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')) || 'jpg';
+    const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    unwrap(await sb.storage.from('images').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type }));
+    return sb.storage.from('images').getPublicUrl(path).data.publicUrl;
+  }
+};
+
+/* =========================================================================
+   7. 資料層 — 示範模式（尚未填 Supabase 金鑰時，資料存在本機瀏覽器）
+   規則與資料庫端完全相同，方便你先試用所有流程。
+========================================================================= */
+const LocalDB = (() => {
+  const KEY = 'ih_demo_db_v1';
+  let mem = null;
+  const addDays = (n) => { const d = new Date(Date.now() + 8 * 3600e3); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  function seed() {
+    const now = Date.now();
+    return {
+      products: [
+        { id: 'p1', category: 'oil', name: '臺灣檜木 · 森林精油', subtitle: '10ml ／ 單方精油 ／ 蒸餾萃取', description: '取自阿里山林場回收的檜木邊材，以低溫蒸餾萃取。前調清冽如雨後林道，中後調沉穩溫潤，適合擴香、冥想與睡前放鬆。琥珀玻璃瓶避光保存，附手工木栓滴管。', price: 1280, stock: 24, art: 'oil', active: true, sort: 1 },
+        { id: 'p2', category: 'jade', name: '花蓮墨玉 · 素環手鐲', subtitle: '內徑 56mm ／ 天然閃玉 ／ 附鑑定書', description: '產自花蓮豐田的臺灣閃玉，墨綠近黑、光下透出深翠。不雕紋飾，僅以手工拋磨出溫潤的圓弧，讓玉的本色說話。每只紋理獨一無二，附原石產地與鑑定證明。', price: 6800, stock: 5, art: 'jade', active: true, sort: 2 },
+        { id: 'p3', category: 'tea', name: '阿里山高山烏龍 · 春茶', subtitle: '150g ／ 海拔 1,500m ／ 手採一心二葉', description: '春分後手採一心二葉，輕焙火保留花香與山韻。湯色金黃、入口甘潤，回甘悠長。適合以 95°C 熱水、蓋碗沖泡，可回沖七次以上。附手作錫罐。', price: 1680, stock: 40, art: 'tea', active: true, sort: 3 },
+        { id: 'p4', category: 'metal', name: '手鍛純銀 · 槌目對戒', subtitle: '925 純銀 ／ 一對 ／ 可刻字', description: '由金工師以小槌一記一記敲出細緻槌目，光線落在表面如水波微動。戒圍可訂製，內圈可免費刻上日期或名字縮寫，是送給彼此最安靜的承諾。', price: 4200, stock: 12, art: 'metal', active: true, sort: 4 },
+        { id: 'p5', category: 'wood', name: '胡桃木 · 手刨點心盤', subtitle: '直徑 24cm ／ 北美黑胡桃 ／ 食用級蜂蠟', description: '整塊黑胡桃木以手刨與鑿刀慢慢挖出盤心，保留刀痕的溫度。表面以食用級蜂蠟與植物油反覆上油，適合盛裝和菓子、麵包與水果。', price: 1850, stock: 15, art: 'wood', active: true, sort: 5 },
+        { id: 'p6', category: 'pottery', name: '柴燒 · 自然落灰花器', subtitle: '高 22cm ／ 三日柴燒 ／ 每件皆不同', description: '在柴窯中連續燒製三天三夜，木灰隨火焰落在器身熔成自然釉。茶褐與青綠交錯，火痕無法複製。插一枝枯枝或一朵野花，就是一方禪意。', price: 3600, stock: 6, art: 'pottery', active: true, sort: 6 }
+      ].map(p => ({ ...p, image_url: null, created_at: new Date(now).toISOString() })),
+      courses: [
+        { id: 'c1', category: 'wood', name: '木工體驗課 · 胡桃木湯匙', subtitle: '一日木作 ／ 零經驗可 ／ 作品可帶回', description: '從一塊黑胡桃木料開始，學習鋸、刨、鑿、磨的基本手工具，親手削出屬於自己的木湯匙。課程包含材料、工具使用與上油保養，結束後即可帶回。', price: 1800, duration: '3 小時', capacity: 8, dates: [6, 13, 20, 27].map(addDays), slots: ['10:00 – 13:00', '14:00 – 17:00'], art: 'course-wood', active: true, sort: 1 },
+        { id: 'c2', category: 'metal', name: '金工對戒課 · 雙人同行', subtitle: '兩人一組 ／ 925 純銀 ／ 當日完成', description: '兩人一起量戒圍、裁銀條、焊接、敲槌目到拋光，在老師陪伴下完成彼此的對戒。可在內圈刻字，適合情侶紀念日、求婚與周年。費用以每人計。', price: 3200, duration: '4 小時', capacity: 6, dates: [7, 14, 21, 28].map(addDays), slots: ['13:00 – 17:00'], art: 'course-metal', active: true, sort: 2 },
+        { id: 'c3', category: 'pottery', name: '陶藝拉坯 · 初心體驗', subtitle: '小班制 ／ 拉坯機一人一台 ／ 燒製後寄送', description: '感受陶土在指間旋轉成形，從定中心、開孔到拉高，完成一只杯或碗。課後由工作室修坯、上釉、燒製，約四週後寄到府上。', price: 1600, duration: '2.5 小時', capacity: 8, dates: [5, 12, 19, 26].map(addDays), slots: ['10:00 – 12:30', '14:30 – 17:00', '19:00 – 21:30'], art: 'course-pottery', active: true, sort: 3 }
+      ].map(c => ({ ...c, image_url: null, created_at: new Date(now).toISOString() })),
+      auctions: [
+        { id: 'a1', title: '和闐白玉 · 螭龍佩', category: '玉石', description: '當代玉雕師以和闐白玉籽料手工雕琢，螭龍盤踞璧面，線條流暢、包漿溫潤。尺寸 5.2 × 4.6 cm，附檢測證書與手工楠木盒。', art: 'auction-jade', start_price: 12000, min_increment: 500, current_price: 12000, bid_count: 0, leader_alias: null, start_at: new Date(now).toISOString(), end_at: new Date(now + 3 * 864e5).toISOString(), status: 'active', result: null, active: true, image_url: null, created_at: new Date(now).toISOString() },
+        { id: 'a2', title: '柴燒建盞 · 油滴天目茶碗', category: '陶藝', description: '以傳統龍窯柴燒，碗內滿布銀色油滴斑，光下如星河流轉。口徑 12.3 cm，適合點茶與品茗。附作者落款桐木盒。', art: 'auction-bowl', start_price: 8000, min_increment: 300, current_price: 8000, bid_count: 0, leader_alias: null, start_at: new Date(now).toISOString(), end_at: new Date(now + 5 * 864e5).toISOString(), status: 'active', result: null, active: true, image_url: null, created_at: new Date(now).toISOString() }
+      ],
+      bids: [], bidders: [], chat: [], orders: [], registrations: [], messages: []
+    };
+  }
+  const db = () => mem || (mem = store.get(KEY) || seed());
+  const save = () => { if (!store.set(KEY, mem)) toast('示範模式的瀏覽器儲存空間已滿，請改用較小的圖片', 'err'); };
+  const wait = (ms = 120) => new Promise(r => setTimeout(r, ms));
+  const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
+  const bySort = (a, b) => (a.sort || 0) - (b.sort || 0) || String(a.created_at).localeCompare(String(b.created_at));
+  const byNew = (a, b) => String(b.created_at).localeCompare(String(a.created_at));
+  const fail = (m) => { throw new Error(m); };
+  const nowIso = () => new Date().toISOString();
+  const alias = (name, phone) => String(name).trim().slice(0, 1) + '＊＊·' + digits(phone).slice(-3);
+  const mask = (n) => String(n).slice(0, 1) + '○○';
+
+  return {
+    async products() { await wait(); return clone(db().products.filter(p => p.active).sort(bySort)); },
+    async courses() { await wait(); return clone(db().courses.filter(c => c.active).sort(bySort)); },
+    async auctions() { await wait(); return clone(db().auctions.filter(a => a.active).sort((a, b) => a.end_at.localeCompare(b.end_at))); },
+    async auction(id) { await wait(60); return clone(db().auctions.find(a => a.id === id) || null); },
+    async bids(aid) { await wait(60); return clone(db().bids.filter(b => b.auction_id === aid).sort((a, b) => b.amount - a.amount).slice(0, 30).map(({ id, amount, bidder_alias, created_at }) => ({ id, amount, bidder_alias, created_at }))); },
+    async chat(aid) { await wait(60); return clone(db().chat.filter(c => c.auction_id === aid).slice(-200)); },
+    async sendChat(row) {
+      await wait(); const a = db().auctions.find(x => x.id === row.auction_id);
+      if (!a || a.status !== 'active') fail('此競標的聊天區已關閉');
+      db().chat.push({ id: Date.now(), ...row, created_at: nowIso() }); save();
+    },
+    async seats(cid) {
+      await wait(60); const m = {};
+      db().registrations.filter(r => r.course_id === cid && r.status !== '已取消').forEach(r => { const k = r.course_date + '|' + r.slot; m[k] = (m[k] || 0) + r.people; });
+      return Object.entries(m).map(([k, v]) => ({ course_date: k.split('|')[0], slot: k.split('|')[1], booked: v }));
+    },
+    async createRegistration(row) {
+      await wait(250); const c = db().courses.find(x => x.id === row.course_id);
+      if (!c || !c.active) fail('課程不存在或已下架');
+      if (!c.dates.includes(row.course_date)) fail('所選日期未開放報名');
+      if (row.course_date < todayStr()) fail('此日期已過');
+      if (!c.slots.includes(row.slot)) fail('所選時段未開放');
+      const booked = db().registrations.filter(r => r.course_id === c.id && r.course_date === row.course_date && r.slot === row.slot && r.status !== '已取消').reduce((s, r) => s + r.people, 0);
+      if (booked + row.people > c.capacity) fail(`名額不足，此時段剩餘 ${Math.max(c.capacity - booked, 0)} 位`);
+      if (db().registrations.some(r => r.reg_no === row.reg_no)) throw Object.assign(new Error('dup'), { dup: true });
+      db().registrations.push({ id: uuid(), ...row, course_name: c.name, amount: c.price * row.people, status: '待確認', created_at: nowIso() }); save();
+    },
+    async createOrder(row) {
+      await wait(250); let sub = 0; const items = [];
+      for (const it of row.items) {
+        const p = db().products.find(x => x.id === it.id);
+        if (!p || !p.active) fail('有商品已下架，請重新整理購物車');
+        if (it.qty < 1 || it.qty > 20) fail('商品數量不正確');
+        if (p.stock < it.qty) fail(`「${p.name}」庫存不足（剩 ${p.stock} 件）`);
+      }
+      for (const it of row.items) { const p = db().products.find(x => x.id === it.id); p.stock -= it.qty; sub += p.price * it.qty; items.push({ id: p.id, name: p.name, price: p.price, qty: it.qty, category: p.category }); }
+      const shipping = sub >= SHOP.freeShip ? 0 : row.payment === 'cvs_cod' ? SHOP.shipCvs : SHOP.shipTransfer;
+      const status = row.payment === 'cvs_cod' ? '待出貨' : (row.transfer_last5 ? '待確認匯款' : '待付款');
+      if (db().orders.some(o => o.order_no === row.order_no)) throw Object.assign(new Error('dup'), { dup: true });
+      db().orders.push({ id: uuid(), ...row, source: 'shop', items, subtotal: sub, shipping, total: sub + shipping, status, created_at: nowIso() }); save();
+    },
+    async createMessage(row) { await wait(250); db().messages.push({ id: uuid(), ...row, status: '未讀', created_at: nowIso() }); save(); },
+    async registerBidder(row) { await wait(200); db().bidders.push({ id: uuid(), ...row, alias: alias(row.name, row.phone), created_at: nowIso() }); save(); },
+    async placeBid(aid, token, amount) {
+      await wait(250);
+      const b = db().bidders.find(x => x.token === token); if (!b) fail('請先填寫競標者資料');
+      const a = db().auctions.find(x => x.id === aid);
+      if (!a || !a.active || a.status !== 'active') fail('此競標未開放出價');
+      if (Date.now() >= new Date(a.end_at).getTime()) fail('競標已結束（已超過結標時間），無法出價');
+      const need = a.bid_count === 0 ? a.start_price : a.current_price + a.min_increment;
+      if (amount < need) fail(`出價必須至少 NT$ ${need}（目前最高價 NT$ ${a.current_price}，每口加價 NT$ ${a.min_increment}）`);
+      if (amount > need + a.min_increment * 200) fail('單次加價過高，請確認金額是否輸入正確');
+      const top = db().bids.filter(x => x.auction_id === aid).sort((x, y) => y.amount - x.amount)[0];
+      if (top && top.bidder_id === b.id) fail('您目前已是最高出價者，無需再次出價');
+      db().bids.push({ id: Date.now(), auction_id: aid, bidder_id: b.id, amount, bidder_alias: b.alias, created_at: nowIso() });
+      a.current_price = amount; a.bid_count += 1; a.leader_alias = b.alias;
+      if (new Date(a.end_at).getTime() - Date.now() < 120e3) a.end_at = new Date(Date.now() + 120e3).toISOString();
+      save(); return { current_price: a.current_price, bid_count: a.bid_count, end_at: a.end_at };
+    },
+    async finalize() {
+      let n = 0;
+      db().auctions.filter(a => a.status === 'active' && new Date(a.end_at).getTime() <= Date.now()).forEach(a => {
+        const top = db().bids.filter(x => x.auction_id === a.id).sort((x, y) => y.amount - x.amount)[0];
+        if (!top) { a.status = 'ended'; a.result = 'unsold'; }
+        else {
+          const w = db().bidders.find(x => x.id === top.bidder_id);
+          db().orders.push({ id: uuid(), order_no: genCode('A'), source: 'auction', items: [{ id: a.id, name: a.title, price: top.amount, qty: 1, category: 'auction' }], subtotal: top.amount, shipping: 0, total: top.amount, buyer_name: w.name, phone: w.phone, email: w.email, address: w.address, payment: 'transfer', status: '待付款', auction_id: a.id, bidder_id: w.id, created_at: nowIso() });
+          a.status = 'ended'; a.result = 'sold';
+        }
+        n++;
+      });
+      if (n) save(); return n;
+    },
+    async myResult(aid, token) {
+      const b = db().bidders.find(x => x.token === token); if (!b) return null;
+      const o = db().orders.find(x => x.auction_id === aid && x.bidder_id === b.id);
+      return o ? { order_no: o.order_no, total: o.total, status: o.status } : null;
+    },
+    async lookupOrder(no, phone) {
+      await wait(200); const o = db().orders.find(x => x.order_no === String(no).trim().toUpperCase() && digits(x.phone) === digits(phone));
+      if (!o) return null; const { order_no, created_at, status, source, items, subtotal, shipping, total, payment, transfer_last5, cvs_brand, cvs_store } = o;
+      return clone({ order_no, created_at, status, source, items, subtotal, shipping, total, payment, transfer_last5, cvs_brand, cvs_store, buyer_name: mask(o.buyer_name) });
+    },
+    async lookupReg(no, phone) {
+      await wait(200); const r = db().registrations.find(x => x.reg_no === String(no).trim().toUpperCase() && digits(x.phone) === digits(phone));
+      if (!r) return null; const { reg_no, created_at, status, course_name, course_date, slot, people, amount } = r;
+      return clone({ reg_no, created_at, status, course_name, course_date, slot, people, amount, name: mask(r.name) });
+    },
+    async submitLast5(no, phone, l5) {
+      await wait(200); if (!/^\d{5}$/.test(l5)) fail('末五碼必須是 5 位數字');
+      const o = db().orders.find(x => x.order_no === String(no).trim().toUpperCase() && digits(x.phone) === digits(phone) && x.payment === 'transfer' && ['待付款', '待確認匯款'].includes(x.status));
+      if (!o) fail('查無可填寫的匯款訂單'); o.transfer_last5 = l5; o.status = '待確認匯款'; save(); return true;
+    },
+    subscribe() { return () => {}; },
+    // 示範模式的「後台」只能看到你自己瀏覽器裡的示範資料
+    async session() { return { demo: true }; },
+    async signIn() { return { demo: true }; },
+    async signOut() {},
+    async isAdmin() { return true; },
+    async list(table) {
+      await wait(); const m = { products: 'products', courses: 'courses', auctions: 'auctions', orders: 'orders', registrations: 'registrations', messages: 'messages' }[table];
+      const rows = clone(db()[m] || []); return ['products', 'courses'].includes(table) ? rows.sort(bySort) : rows.sort(byNew);
+    },
+    async save(table, row) {
+      await wait(); const arr = db()[table];
+      if (row.id) { const i = arr.findIndex(x => x.id === row.id); arr[i] = { ...arr[i], ...row }; }
+      else arr.push({ ...row, id: uuid(), created_at: nowIso() });
+      save();
+    },
+    async update(table, id, patch) { await wait(80); const r = db()[table].find(x => x.id === id); if (r) Object.assign(r, patch); save(); },
+    async remove(table, id) {
+      await wait(); if (table === 'courses' && db().registrations.some(r => r.course_id === id)) fail('此課程已有報名紀錄，無法刪除（請改用下架）');
+      db()[table] = db()[table].filter(x => x.id !== id); if (table === 'auctions') db().bids = db().bids.filter(b => b.auction_id !== id); save();
+    },
+    async adminBids(aid) { await wait(); return clone(db().bids.filter(b => b.auction_id === aid).sort((a, b) => b.amount - a.amount).map(b => ({ ...b, bidders: db().bidders.find(x => x.id === b.bidder_id) }))); },
+    async upload(file) {
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => { const img = new Image(); img.onload = () => { const s = Math.min(1, 900 / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .82)); }; img.onerror = () => rej(new Error('圖片讀取失敗')); img.src = fr.result; };
+        fr.onerror = () => rej(new Error('圖片讀取失敗')); fr.readAsDataURL(file);
+      });
+    }
+  };
+})();
+
+const DB = DEMO ? LocalDB : SupaDB;
+
+/* =========================================================================
+   8. 全域狀態、色調、購物車
+========================================================================= */
+const S = { products: [], courses: [], auctions: [], loaded: false, route: [], cleanups: [], cart: store.get('ih_cart', []) };
+
+function setTheme(t) {
+  if (!['wood', 'obsidian', 'morning'].includes(t)) t = 'wood';
+  document.documentElement.setAttribute('data-theme', t);
+  store.set('ih_theme', t);
+  $$('.theme-opt').forEach(b => b.classList.toggle('is-active', b.dataset.val === t));
+}
+setTheme(store.get('ih_theme', 'wood'));
+
+const saveCart = () => { store.set('ih_cart', S.cart); paintCartCount(); };
+function paintCartCount() {
+  const n = S.cart.reduce((s, x) => s + x.qty, 0), el = $('#cart-count');
+  el.textContent = n; el.classList.toggle('hide', !n);
+}
+function addToCart(id, qty) {
+  const p = S.products.find(x => x.id === id); if (!p) return;
+  const cur = S.cart.find(x => x.id === id), have = cur ? cur.qty : 0;
+  if (have + qty > p.stock) return toast(`庫存只剩 ${p.stock} 件`, 'err');
+  if (cur) cur.qty += qty; else S.cart.push({ id, qty });
+  saveCart(); toast('已加入購物車');
+}
+const cartLines = () => S.cart.map(c => ({ ...c, p: S.products.find(x => x.id === c.id) })).filter(c => c.p);
+const shipFee = (sub, pay) => sub >= SHOP.freeShip ? 0 : pay === 'cvs_cod' ? SHOP.shipCvs : SHOP.shipTransfer;
+
+async function loadCatalog() {
+  try {
+    const [p, c, a] = await Promise.all([DB.products(), DB.courses(), DB.auctions()]);
+    S.products = p || []; S.courses = c || []; S.auctions = a || []; S.loaded = true;
+  } catch (e) {
+    S.loaded = true; toast('資料載入失敗：' + e.message, 'err');
+  }
+}
+
+/* =========================================================================
+   9. 路由（#/ 網址）— 也支援直接打開 /admin 路徑
+========================================================================= */
+function parseRoute() {
+  let h = location.hash.replace(/^#/, '');
+  if (/\/admin\/?$/.test(location.pathname) && !/^\/admin/.test(h)) h = '/admin';
+  return h.split('?')[0].split('/').filter(Boolean).map(decodeURIComponent);
+}
+function updateNavActive(r) {
+  const [a, b] = r;
+  let cat = null, nav = 'home';
+  if (a === 'c') cat = b;
+  else if (a === 'p') { const p = S.products.find(x => x.id === b); cat = p && p.category; }
+  else if (a === 'course') nav = 'courses';
+  else if (a === 'auction') nav = 'auctions';
+  else if (a === 'checkout') nav = 'cart';
+  else if (a) nav = a;
+  if (cat) nav = null;
+  const grp = cat && CATS[cat] ? CATS[cat].group : null;
+  $$('[data-nav]').forEach(el => el.classList.toggle('is-active', el.dataset.nav === nav));
+  $$('[data-cat]').forEach(el => el.classList.toggle('is-active', el.dataset.cat === cat));
+  $$('.nav-group').forEach(g => g.classList.toggle('is-active', g.dataset.group === grp));
+}
+function closeMenus() {
+  document.body.classList.remove('drawer-open');
+  $$('.nav-group.open,.theme-sw.open').forEach(x => x.classList.remove('open'));
+}
+
+async function router() {
+  S.cleanups.forEach(f => { try { f(); } catch (e) {} }); S.cleanups = [];
+  closeMenus(); closeModal();
+  const r = parseRoute(); S.route = r;
+  window.scrollTo(0, 0);
+  if (r[0] === 'admin') return r[1] === 'login' ? renderAdminLogin() : renderAdmin(r[1] || 'dashboard');
+  document.body.classList.remove('is-admin');
+  if (!S.loaded) { app.innerHTML = '<div class="loading"><i></i><i></i><i></i></div>'; await loadCatalog(); }
+  updateNavActive(r);
+  const [a, b] = r;
+  let html;
+  switch (a) {
+    case undefined: html = viewHome(); break;
+    case 'c': html = viewCategory(b); break;
+    case 'p': html = viewProduct(b); break;
+    case 'courses': html = viewCourses(); break;
+    case 'course': html = viewCourse(b); break;
+    case 'auctions': html = viewAuctions(); break;
+    case 'auction': html = '<div class="loading"><i></i><i></i><i></i></div>'; break;
+    case 'cart': html = viewCart(); break;
+    case 'checkout': html = viewCheckout(); break;
+    case 'lookup': html = viewLookup(b); break;
+    case 'contact': html = viewContact(); break;
+    default: html = `<div class="wrap empty"><p class="serif">找不到這個頁面</p><a class="link-more" href="#/">回到首頁</a></div>`;
+  }
+  app.innerHTML = `<div class="fade-in">${html}</div>`;
+  if (a === 'course') initCourse(b);
+  if (a === 'auction') initAuction(b);
+  if (a === 'auctions') { DB.finalize(); }
+  if (a === 'checkout') initCheckout();
+}
+window.addEventListener('hashchange', router);
+
+/* =========================================================================
+   10. 前台頁面
+========================================================================= */
+const crumb = (...items) => `<div class="crumb"><a href="#/">首頁</a>${items.map(([t, h]) => `<span>/</span>${h ? `<a href="${h}">${esc(t)}</a>` : esc(t)}`).join('')}</div>`;
+
+function productCard(p) {
+  const c = CATS[p.category] || {};
+  return `<a class="pcard" href="#/p/${encodeURIComponent(p.id)}">
+    <div class="ph"><img src="${esc(imgOf(p))}" alt="${esc(p.name)}" loading="lazy">
+      <span class="tag ${c.group === 'literati' ? 'lit' : 'craft'}">${esc(c.name || '')}</span>
+      ${p.stock <= 0 ? '<div class="soldout">售 完</div>' : ''}</div>
+    <div class="meta"><div class="cat">${esc(c.en || '')}</div><h3>${esc(p.name)}</h3><div class="sub">${esc(p.subtitle || '')}</div>
+      <div class="price">${money(p.price)}</div></div></a>`;
+}
+
+function viewHome() {
+  const hero = S.products.find(p => p.category === 'pottery') || S.products[0];
+  const hero2 = S.products.find(p => p.category === 'tea') || S.products[1];
+  const colSec = (gk, n) => {
+    const g = GROUPS[gk];
+    return `<section class="sec col-band ${gk === 'literati' ? 'lit' : 'craft'}"><div class="wrap col-intro">
+      <div class="side"><p class="eyebrow"><span class="sec-num">0${n}</span>${g.en}</p><h2>${g.name}</h2><div class="line"></div><p>${g.desc}</p></div>
+      <div class="col-tiles">${g.cats.map(k => {
+        const p = S.products.find(x => x.category === k), cnt = S.products.filter(x => x.category === k).length;
+        return `<a class="col-tile" href="#/c/${k}"><div class="ph"><img src="${esc(p ? imgOf(p) : ART[k])}" alt="${CATS[k].full}" loading="lazy"></div>
+          <div class="cap"><div><span class="en">${CATS[k].en.split(' · ')[0]} · ${cnt} 件</span><b>${CATS[k].name}</b></div><span class="arrow">${ICON.arrow}</span></div></a>`;
+      }).join('')}</div></div></section>`;
+  };
+  const live = S.auctions.filter(a => a.status === 'active');
+  return `
+  <section class="hero"><div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Island Handmade Studio · 職人選物</p>
+      <h1>一器一物，<br>皆是時間的手跡。</h1>
+      <p class="lead">精油、玉石、好茶，與金工、木工、陶藝。我們走訪島嶼上的職人工作室，把慢下來的生活，送到你的手中。</p>
+      <div class="hero-cta"><a class="btn" href="#/c/oil">開始選物</a><a class="btn ghost" href="#/courses">預約體驗課</a></div>
+      <div class="hero-stats"><div><b>${S.products.length}</b><span>件選物</span></div><div><b>${S.courses.length}</b><span>堂體驗課</span></div><div><b>${live.length}</b><span>件競標中</span></div></div>
+    </div>
+    <div class="hero-visual">
+      <div class="main"><img src="${esc(hero ? imgOf(hero) : ART.pottery)}" alt=""></div>
+      <div class="sub"><img src="${esc(hero2 ? imgOf(hero2) : ART.tea)}" alt=""></div>
+      <div class="vert">手作之美　在於不完美</div>
+    </div>
+  </div></section>
+  ${colSec('literati', 1)}
+  ${colSec('craft', 2)}
+  <section class="sec col-band"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow"><span class="sec-num">03</span>SELECTED</p><h2>本季選物</h2></div><p>每一件都由我們親自挑選、拍攝與包裝。若想要不同尺寸或刻字，歡迎點進商品頁私訊訂製。</p></div>
+    <div class="grid-products">${S.products.slice(0, 8).map(productCard).join('') || '<p class="empty">尚無商品</p>'}</div>
+  </div></section>
+  <section class="sec col-band" style="background:var(--bg2)"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow"><span class="sec-num">04</span>WORKSHOP</p><h2>工藝體驗課程</h2></div><a class="link-more" href="#/courses">全部課程</a></div>
+    <div class="grid-products" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${S.courses.map(c => `
+      <a class="pcard" href="#/course/${encodeURIComponent(c.id)}"><div class="ph" style="aspect-ratio:4/3"><img src="${esc(imgOf(c))}" alt="${esc(c.name)}" loading="lazy"></div>
+      <div class="meta"><div class="cat">${esc(c.duration || '')} · 每時段 ${c.capacity} 位</div><h3>${esc(c.name)}</h3><div class="sub">${esc(c.subtitle || '')}</div><div class="price"><small>每人</small>${money(c.price)}</div></div></a>`).join('')}</div>
+  </div></section>
+  ${live.length ? `<section class="sec col-band"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow"><span class="sec-num">05</span>AUCTION</p><h2>藝品競標</h2></div><a class="link-more" href="#/auctions">前往競標</a></div>
+    <div class="grid-products" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${live.slice(0, 3).map(auctionCard).join('')}</div>
+  </div></section>` : ''}
+  <section class="sec col-band"><div class="wrap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:48px">
+    ${[['職人直送', '每件作品都附上職人名卡與製作紀錄，從工作室直接寄出。'], ['一件一證', '玉石與競標藝品附原產地與檢測證明，安心收藏。'], ['專屬訂製', '尺寸、刻字、材質都能談。一鍵私訊，我們會親自與你聯繫。']].map(([t, d], i) => `
+      <div><p class="en" style="font-size:30px;color:var(--accent)">0${i + 1}</p><h3 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:19px;margin:8px 0 10px">${t}</h3><p style="color:var(--muted);font-size:14px">${d}</p></div>`).join('')}
+    <div style="align-self:center"><button class="btn-custom" data-act="custom" data-subject="首頁 · 專屬訂製">${ICON.chat}一鍵私訊客製化需求</button></div>
+  </div></section>`;
+}
+
+function viewCategory(key) {
+  const c = CATS[key];
+  if (!c) return `<div class="wrap empty"><p class="serif">找不到這個專區</p></div>`;
+  const g = GROUPS[c.group], list = S.products.filter(p => p.category === key);
+  return `<div class="wrap ${c.group === 'literati' ? 'lit' : 'craft'}">
+    ${crumb([g.name, '#/c/' + g.cats[0]], [c.full])}
+    <div class="cat-hero">
+      <div><p class="eyebrow">${g.name} · ${c.en}</p><h1>${c.full}</h1>
+        <div class="cat-tabs">${g.cats.map(k => `<a class="cat-tab ${k === key ? 'is-active' : ''}" href="#/c/${k}">${CATS[k].name}</a>`).join('')}</div></div>
+      <p>${c.desc}</p>
+    </div>
+    <div style="padding:48px 0 96px">
+      <p style="font-size:13px;color:var(--muted);letter-spacing:.2em;margin-bottom:28px">共 ${list.length} 件作品</p>
+      ${list.length ? `<div class="grid-products">${list.map(productCard).join('')}</div>` : `<div class="empty"><p class="serif">新作品整理中</p><p>想找特定的作品嗎？</p><div style="max-width:320px;margin:24px auto 0"><button class="btn-custom" data-act="custom" data-subject="${esc(c.full)}">${ICON.chat}一鍵私訊客製化需求</button></div></div>`}
+    </div></div>`;
+}
+
+function viewProduct(id) {
+  const p = S.products.find(x => x.id === id);
+  if (!p) return `<div class="wrap empty"><p class="serif">此商品已下架</p><a class="link-more" href="#/">回到首頁</a></div>`;
+  const c = CATS[p.category] || {}, g = GROUPS[c.group] || {};
+  const rel = S.products.filter(x => x.id !== p.id && CATS[x.category] && CATS[x.category].group === c.group).slice(0, 4);
+  return `<div class="wrap">
+    ${crumb([g.name || '', '#/c/' + p.category], [c.full || '', '#/c/' + p.category], [p.name])}
+    <div class="pd">
+      <div class="pd-img"><img src="${esc(imgOf(p))}" alt="${esc(p.name)}"></div>
+      <div>
+        <span class="tag ${c.group === 'literati' ? 'lit' : 'craft'}">${esc(g.name || '')} · ${esc(c.name || '')}</span>
+        <h1>${esc(p.name)}</h1><p class="sub">${esc(p.subtitle || '')}</p>
+        <div class="price-lg">${money(p.price)}</div>
+        <div class="stock">${p.stock > 0 ? (p.stock <= 5 ? `僅剩 ${p.stock} 件` : '現貨供應') : '目前售完，可私訊預訂'}</div>
+        ${p.stock > 0 ? `<div style="margin-top:26px"><span style="font-size:12.5px;letter-spacing:.18em;color:var(--ink2);display:block;margin-bottom:8px">數量</span>
+          <div class="qty"><button data-act="qty" data-d="-1" aria-label="減少">−</button><input id="pd-qty" value="1" inputmode="numeric" aria-label="數量"><button data-act="qty" data-d="1" data-max="${p.stock}" aria-label="增加">+</button></div></div>
+        <div class="buy"><button class="btn ghost" data-act="add-cart" data-id="${esc(p.id)}">加入購物車</button><button class="btn" data-act="buy-now" data-id="${esc(p.id)}">直接購買</button></div>` : '<div style="height:24px"></div>'}
+        <button class="btn-custom" data-act="custom" data-subject="商品 · ${esc(p.name)}">${ICON.chat}一鍵私訊客製化需求</button>
+        <div class="desc">${esc(p.description || '')}</div>
+        <dl class="spec">
+          <div><dt>付款方式</dt><dd>銀行轉帳 / 匯款、超商取貨付款</dd></div>
+          <div><dt>運送</dt><dd>匯款宅配 ${money(SHOP.shipTransfer)}、超商取貨 ${money(SHOP.shipCvs)}，滿 ${money(SHOP.freeShip)} 免運</dd></div>
+          <div><dt>出貨時間</dt><dd>付款確認後 3–5 個工作天（手作訂製另議）</dd></div>
+        </dl>
+      </div>
+    </div>
+    ${rel.length ? `<div style="padding-bottom:96px"><div class="sec-head" style="margin-bottom:28px"><div><p class="eyebrow">YOU MAY ALSO LIKE</p><h2 style="font-size:24px">同系列推薦 · ${esc(g.name || '')}</h2></div></div><div class="grid-products">${rel.map(productCard).join('')}</div></div>` : ''}
+  </div>`;
+}
+
+function nextDates(c) { const t = todayStr(); return (c.dates || []).filter(d => d >= t).sort(); }
+
+function viewCourses() {
+  return `<div class="wrap">
+    ${crumb(['體驗課程'])}
+    <div class="cat-hero" style="grid-template-columns:1fr 1fr"><div><p class="eyebrow">WORKSHOP</p><h1>工藝體驗課程</h1></div>
+      <p>在職人的工作室裡，花一個下午，親手完成一件作品。小班制、零經驗可參加，所有材料與工具皆已備妥。</p></div>
+    <div class="course-list" style="padding:48px 0 96px">${S.courses.map(c => {
+      const nd = nextDates(c);
+      return `<div class="ccard"><a class="ph" href="#/course/${encodeURIComponent(c.id)}"><img src="${esc(imgOf(c))}" alt="${esc(c.name)}" loading="lazy"></a>
+        <div class="body"><span class="tag ${CATS[c.category] && CATS[c.category].group === 'literati' ? 'lit' : 'craft'}">${esc((CATS[c.category] || {}).name || '體驗')}</span>
+          <h3>${esc(c.name)}</h3><p style="color:var(--muted);font-size:14px">${esc(c.subtitle || '')}</p>
+          <div class="facts"><div><span>課程時間</span>${esc(c.duration || '')}</div><div><span>每時段名額</span>${c.capacity} 位</div><div><span>最近場次</span>${nd[0] ? fmtDate(nd[0]) : '即將公布'}</div></div>
+          <div class="bottom"><div class="price" style="font-family:'Cormorant Garamond',serif;font-size:26px"><small>每人</small>${money(c.price)}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" data-act="custom" data-subject="課程 · ${esc(c.name)}">私訊詢問</button><a class="btn sm" href="#/course/${encodeURIComponent(c.id)}">查看與報名</a></div></div>
+        </div></div>`;
+    }).join('') || '<div class="empty"><p class="serif">課程籌備中</p></div>'}</div></div>`;
+}
+
+function viewCourse(id) {
+  const c = S.courses.find(x => x.id === id);
+  if (!c) return `<div class="wrap empty"><p class="serif">此課程已下架</p><a class="link-more" href="#/courses">查看其他課程</a></div>`;
+  const nd = nextDates(c);
+  return `<div class="wrap">
+    ${crumb(['體驗課程', '#/courses'], [c.name])}
+    <div class="course-detail">
+      <div>
+        <div class="ph"><img src="${esc(imgOf(c))}" alt="${esc(c.name)}"></div>
+        <p class="eyebrow">WORKSHOP · ${esc(c.duration || '')}</p>
+        <h1 class="serif" style="font-weight:500;font-size:clamp(26px,3vw,34px);letter-spacing:.16em;margin:10px 0 6px;line-height:1.5">${esc(c.name)}</h1>
+        <p style="color:var(--muted)">${esc(c.subtitle || '')}</p>
+        <div class="desc" style="margin-top:28px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink2);line-height:2.1;white-space:pre-line">${esc(c.description || '')}</div>
+        <dl class="spec">
+          <div><dt>費用</dt><dd>${money(c.price)} / 人（含材料與工具）</dd></div>
+          <div><dt>課程時間</dt><dd>${esc(c.duration || '')}</dd></div>
+          <div><dt>名額</dt><dd>每時段 ${c.capacity} 位，額滿即止</dd></div>
+          <div><dt>上課地點</dt><dd>${esc(SHOP.address)}</dd></div>
+          <div><dt>付款</dt><dd>報名後我們會於 24 小時內電話確認，並提供匯款資訊</dd></div>
+        </dl>
+        <div style="margin-top:28px;max-width:420px"><button class="btn-custom" data-act="custom" data-subject="課程 · ${esc(c.name)}">${ICON.chat}一鍵私訊客製化需求（包班 / 企業課）</button></div>
+      </div>
+      <form class="reg-card" id="reg-form" novalidate>
+        <p class="eyebrow">ONLINE BOOKING</p><h3>線上報名</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:20px">選擇日期與時段，填寫聯絡資料即可完成預約。</p>
+        ${nd.length ? `
+        <label class="field"><span>日期<em>*</em></span><select class="select" name="date" required>${nd.map(d => `<option value="${d}">${fmtDate(d)}</option>`).join('')}</select></label>
+        <div class="field"><span>時段<em>*</em></span><div class="chips" id="slot-chips"></div></div>
+        <label class="field"><span>人數<em>*</em></span><select class="select" name="people" id="reg-people"></select></label>
+        <div class="grid2"><label class="field"><span>姓名<em>*</em></span><input class="input" name="name" maxlength="30" autocomplete="name" required></label>
+        <label class="field"><span>電話<em>*</em></span><input class="input" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="0912345678" required></label></div>
+        <label class="field"><span>備註</span><textarea class="textarea" name="note" maxlength="500" style="min-height:80px" placeholder="例如：想刻的字、飲食需求"></textarea></label>
+        <div class="reg-total"><span style="font-size:13px;letter-spacing:.2em;color:var(--muted)">應付金額</span><b id="reg-total">${money(c.price)}</b></div>
+        <button class="btn block" type="submit" id="reg-submit">送出報名</button>` : '<div class="empty" style="padding:30px 0">目前沒有開放的場次<br>歡迎私訊詢問下一期</div>'}
+      </form>
+    </div></div>`;
+}
+
+async function initCourse(id) {
+  const c = S.courses.find(x => x.id === id), f = $('#reg-form');
+  if (!c || !f || !f.date) return;
+  let booked = [];
+  try { booked = await DB.seats(c.id); } catch (e) {}
+  let slot = null;
+  const left = (d, s) => c.capacity - ((booked.find(b => b.course_date === d && b.slot === s) || {}).booked || 0);
+  const paint = () => {
+    const d = f.date.value;
+    $('#slot-chips').innerHTML = c.slots.map(s => { const l = left(d, s); return `<button type="button" class="chip ${slot === s ? 'on' : ''}" data-slot="${esc(s)}" ${l <= 0 ? 'disabled' : ''}>${esc(s)}<small>${l <= 0 ? '已額滿' : `剩 ${l} 位`}</small></button>`; }).join('');
+    const max = slot ? Math.min(10, left(d, slot)) : 0;
+    const cur = +f.people.value || 1;
+    f.people.innerHTML = max > 0 ? Array.from({ length: max }, (_, i) => `<option value="${i + 1}" ${i + 1 === Math.min(cur, max) ? 'selected' : ''}>${i + 1} 位</option>`).join('') : '<option value="">請先選擇時段</option>';
+    $('#reg-total').textContent = money(c.price * (+f.people.value || 1));
+  };
+  const firstOpen = () => { const s = c.slots.find(s => left(f.date.value, s) > 0); slot = s || null; };
+  firstOpen(); paint();
+  f.date.addEventListener('change', () => { firstOpen(); paint(); });
+  f.people.addEventListener('change', () => { $('#reg-total').textContent = money(c.price * (+f.people.value || 1)); });
+  $('#slot-chips').addEventListener('click', e => { const b = e.target.closest('[data-slot]'); if (b) { slot = b.dataset.slot; paint(); } });
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = f.name.value.trim(), phone = f.phone.value.trim(), people = +f.people.value;
+    if (!slot) return toast('請選擇時段', 'err');
+    if (!people) return toast('請選擇人數', 'err');
+    if (!name) return toast('請填寫姓名', 'err');
+    if (!phoneOk(phone)) return toast('請填寫正確的電話號碼', 'err');
+    const btn = $('#reg-submit'); btn.disabled = true; btn.textContent = '送出中…';
+    const row = { course_id: c.id, course_date: f.date.value, slot, name, phone, people, note: f.note.value.trim() || null };
+    try {
+      const reg_no = await withCode('R', code => DB.createRegistration({ ...row, reg_no: code }));
+      app.innerHTML = `<div class="wrap fade-in"><div class="done-box"><div class="mark">${ICON.check}</div>
+        <p class="eyebrow">BOOKING RECEIVED</p><h2 class="serif" style="font-weight:500;letter-spacing:.3em;margin:8px 0 18px">報名已送出</h2>
+        <p style="color:var(--muted);font-size:13px;letter-spacing:.2em">報名編號</p><p class="no">${esc(reg_no)}</p>
+        <p style="font-size:12.5px;color:var(--muted)">請截圖或記下此編號，可在「訂單查詢」以編號＋電話查詢</p>
+        <dl class="kv" style="text-align:left;max-width:380px;margin:28px auto 0;border-top:1px solid var(--line);padding-top:18px">
+          <dt>課程</dt><dd>${esc(c.name)}</dd><dt>日期</dt><dd>${fmtDate(row.course_date)}</dd><dt>時段</dt><dd>${esc(slot)}</dd><dt>人數</dt><dd>${people} 位</dd><dt>金額</dt><dd>${money(c.price * people)}</dd></dl>
+        <p style="margin:24px 0;font-size:14px;color:var(--ink2)">我們會在 24 小時內以電話與你確認，並提供匯款資訊。</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn ghost" href="#/lookup/reg">查詢報名</a><a class="btn" href="#/courses">看看其他課程</a></div></div></div>`;
+      window.scrollTo(0, 0);
+    } catch (err) { toast(err.message, 'err'); btn.disabled = false; btn.textContent = '送出報名'; try { booked = await DB.seats(c.id); paint(); } catch (e) {} }
+  });
+}
+
+// 產生編號並送出，若極少數情況編號重複就自動換一個再試
+async function withCode(prefix, fn) {
+  for (let i = 0; i < 3; i++) {
+    const code = genCode(prefix);
+    try { await fn(code); return code; } catch (e) { if (!e.dup) throw e; }
+  }
+  throw new Error('系統忙碌，請稍後再試');
+}
+
+/* ---------------- 競標 ---------------- */
+function cdText(end) {
+  const ms = new Date(end) - Date.now();
+  if (ms <= 0) return '已結標';
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400);
+  return (d ? d + ' 天 ' : '') + pad(Math.floor(s % 86400 / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60);
+}
+function auctionCard(a) {
+  const ended = a.status !== 'active' || new Date(a.end_at) <= Date.now();
+  return `<a class="a-card" href="#/auction/${encodeURIComponent(a.id)}"><div class="ph"><img src="${esc(imgOf(a))}" alt="${esc(a.title)}" loading="lazy">
+    <span class="cd-pill" ${ended ? '' : `data-countdown="${esc(a.end_at)}"`}>${ended ? '已結標' : '倒數 ' + cdText(a.end_at)}</span></div>
+    <div class="body"><span class="tag">${esc(a.category || '藝品')}</span><h3 style="margin-top:10px">${esc(a.title)}</h3>
+    <div class="row"><div><span>${a.bid_count ? '目前最高價' : '起標價'}</span><b>${money(a.bid_count ? a.current_price : a.start_price)}</b></div><div style="text-align:right"><span>出價次數</span><b style="font-size:20px">${a.bid_count}</b></div></div></div></a>`;
+}
+function viewAuctions() {
+  const live = S.auctions.filter(a => a.status === 'active'), done = S.auctions.filter(a => a.status !== 'active');
+  return `<div class="wrap">${crumb(['藝品競標'])}
+    <div class="cat-hero"><div><p class="eyebrow">AUCTION</p><h1>藝品競標</h1></div>
+      <p>精選職人孤品與收藏級藝品，公開競價。每口加價幅度固定，結標前 2 分鐘內有人出價會自動延長 2 分鐘。得標後僅提供<b>銀行匯款、宅配寄出</b>，不提供貨到付款。</p></div>
+    <div style="padding:48px 0 96px">
+      <h3 class="serif" style="font-weight:500;letter-spacing:.3em;margin-bottom:24px">競標進行中</h3>
+      ${live.length ? `<div class="grid-products" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${live.map(auctionCard).join('')}</div>` : '<div class="empty"><p class="serif">目前沒有進行中的競標</p></div>'}
+      ${done.length ? `<h3 class="serif" style="font-weight:500;letter-spacing:.3em;margin:64px 0 24px">已結標</h3><div class="grid-products" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));opacity:.75">${done.map(auctionCard).join('')}</div>` : ''}
+    </div></div>`;
+}
+
+const minNext = (a) => a.bid_count === 0 ? a.start_price : a.current_price + a.min_increment;
+const myBidder = () => store.get('ih_bidder', null);
+
+async function initAuction(id) {
+  await DB.finalize();
+  let a = await DB.auction(id).catch(() => null);
+  if (!a || (!a.active && a.status === 'active')) { app.innerHTML = `<div class="wrap empty"><p class="serif">找不到這件競標藝品</p><a class="link-more" href="#/auctions">回到競標列表</a></div>`; return; }
+  app.innerHTML = `<div class="wrap fade-in">${crumb(['藝品競標', '#/auctions'], [a.title])}
+    <div class="auction-top">
+      <div><div class="ph"><img src="${esc(imgOf(a))}" alt="${esc(a.title)}"></div>
+        <h1 class="serif" style="font-weight:500;font-size:clamp(24px,3vw,32px);letter-spacing:.14em;margin:28px 0 8px">${esc(a.title)}</h1>
+        <span class="tag">${esc(a.category || '藝品')}</span>
+        <p style="margin-top:20px;color:var(--ink2);line-height:2.1;white-space:pre-line">${esc(a.description || '')}</p>
+        <dl class="spec"><div><dt>起標價</dt><dd>${money(a.start_price)}</dd></div><div><dt>每口加價</dt><dd>${money(a.min_increment)}</dd></div><div><dt>開始時間</dt><dd>${fmtTime(a.start_at)}</dd></div><div><dt>結標時間</dt><dd id="a-end">${fmtTime(a.end_at)}</dd></div><div><dt>付款 / 運送</dt><dd>僅限銀行匯款，確認入帳後宅配寄出（不提供貨到付款）</dd></div></dl>
+        <div style="margin-top:24px;max-width:420px"><button class="btn-custom" data-act="custom" data-subject="競標 · ${esc(a.title)}">${ICON.chat}一鍵私訊詢問此藝品</button></div>
+      </div>
+      <div class="bid-panel" id="bid-panel"></div>
+    </div>
+    <div class="auction-bottom">
+      <div class="panel"><div class="hd"><b>出價紀錄</b><small>只顯示代稱，保護競標者隱私</small></div><div class="bid-list" id="bid-list"></div></div>
+      <div class="panel"><div class="hd"><b>藝友交流區</b><small>聊天內容不計入出價</small></div>
+        <div class="chat-list" id="chat-list"></div>
+        <form class="chat-form" id="chat-form"><input class="input nick" name="nick" maxlength="20" placeholder="暱稱" value="${esc(store.get('ih_nick', ''))}"><input class="input" name="msg" maxlength="200" placeholder="說點什麼…（出價請使用上方出價區）" autocomplete="off"><button class="btn sm" type="submit">送出</button></form>
+      </div>
+    </div></div>`;
+
+  const panel = $('#bid-panel');
+  async function paintPanel() {
+    const ended = a.status !== 'active' || new Date(a.end_at) <= Date.now();
+    const need = minNext(a);
+    if (ended) {
+      let mine = null; const me = myBidder();
+      if (me) { try { mine = await DB.myResult(a.id, me.token); } catch (e) {} }
+      panel.innerHTML = `<div class="hd"><b>競標已結束</b><span class="cd">已結標</span></div>
+        <div class="bd"><div class="cur-price"><span>${a.bid_count ? '成交價' : '流標'}</span><b>${a.bid_count ? money(a.current_price) : '—'}</b></div>
+        <div class="cur-meta"><span>出價 ${a.bid_count} 次</span>${a.leader_alias ? `<span>得標者 ${esc(a.leader_alias)}</span>` : ''}</div></div>
+        ${mine ? `<div class="ended-box"><p class="serif" style="letter-spacing:.2em;font-size:17px;margin-bottom:6px">🎉 恭喜您得標！</p>
+          <p style="font-size:13.5px;color:var(--ink2)">系統已自動為您成立訂單（僅限匯款）：</p><p class="en" style="font-size:24px;margin:6px 0">${esc(mine.order_no)}</p>
+          <div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd><br><dt>金額</dt><dd>${money(mine.total)}</dd></dl></div>
+          <a class="btn block" href="#/lookup/order">匯款後填寫末五碼</a></div>` : ''}`;
+      return;
+    }
+    const me = myBidder();
+    const curVal = $('#bid-amount') ? $('#bid-amount').value : '';
+    panel.innerHTML = `<div class="hd"><b>出價區</b><span class="cd" data-countdown="${esc(a.end_at)}" data-live="1">${cdText(a.end_at)}</span></div>
+      <div class="bd">
+        <div class="cur-price"><span>${a.bid_count ? '目前最高價' : '起標價'}</span><b>${money(a.bid_count ? a.current_price : a.start_price)}</b></div>
+        <div class="cur-meta"><span>出價 ${a.bid_count} 次</span>${a.leader_alias ? `<span>領先 ${esc(a.leader_alias)}</span>` : '<span>尚無人出價</span>'}</div>
+        <div class="need-box">下一口最低出價 <b>${money(need)}</b>　（每口 ${money(a.min_increment)}）</div>
+        <div class="bid-input"><span>NT$</span><input id="bid-amount" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" placeholder="${need}" value="${esc(curVal)}" aria-label="出價金額（只能輸入數字）"></div>
+        <div class="bid-steps">${[1, 2, 5].map(k => `<button type="button" data-act="bid-step" data-v="${need + a.min_increment * (k - 1)}">${k === 1 ? '最低一口' : '+' + k + ' 口'}</button>`).join('')}</div>
+        <button class="btn block accent" data-act="bid" data-id="${esc(a.id)}">確認出價</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center">${me ? `您的競標代稱：${esc(me.alias || '')}　<button type="button" data-act="bidder-reset" style="text-decoration:underline;font-size:12px;color:var(--muted)">更換資料</button>` : '第一次出價需留下聯絡資料（僅供得標後聯繫與寄送）'}</p>
+        <ul class="bid-rules"><li>出價區只接受數字，送出前系統會先讀取最新價格</li><li>出價送出後無法取消，請確認金額</li><li>結標前 2 分鐘內有人出價，自動延長 2 分鐘</li><li>得標後僅提供銀行匯款，確認入帳後寄出</li></ul>
+      </div>`;
+    const inp = $('#bid-amount');
+    inp.addEventListener('input', () => { const v = digits(inp.value).replace(/^0+/, ''); if (inp.value !== v) inp.value = v; });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doBid(a.id); } });
+  }
+  async function refresh(full) {
+    try {
+      if (full) a = (await DB.auction(id)) || a;
+      $('#a-end').textContent = fmtTime(a.end_at);
+      const bids = await DB.bids(id);
+      $('#bid-list').innerHTML = bids.length ? bids.map((b, i) => `<div class="bid-row"><span class="n">${bids.length - i}</span><div>${esc(b.bidder_alias || '匿名')}<time>${fmtTime(b.created_at)}</time></div><b>${money(b.amount)}</b></div>`).join('') : '<div class="empty" style="padding:40px">尚無出價，成為第一位出價者吧</div>';
+      await paintPanel();
+    } catch (e) {}
+  }
+  async function refreshChat() {
+    try {
+      const list = await DB.chat(id), nick = store.get('ih_nick', ''), box = $('#chat-list'); if (!box) return;
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+      box.innerHTML = list.length ? list.map(m => `<div class="chat-msg ${m.nickname === nick ? 'me' : ''}"><div class="who">${esc(m.nickname)} · ${fmtTime(m.created_at).slice(-5)}</div><div class="txt">${esc(m.content)}</div></div>`).join('') : '<div class="empty" style="padding:40px 0">還沒有人聊天，打個招呼吧</div>';
+      if (atBottom || !box.dataset.init) { box.scrollTop = box.scrollHeight; box.dataset.init = 1; }
+    } catch (e) {}
+  }
+  S.auctionRefresh = () => refresh(true);
+  await refresh(false); refreshChat();
+
+  $('#chat-form').addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.target, nick = f.nick.value.trim(), msg = f.msg.value.trim();
+    if (!nick) return toast('請輸入暱稱', 'err');
+    if (!msg) return;
+    store.set('ih_nick', nick);
+    try { await DB.sendChat({ auction_id: id, nickname: nick, content: msg }); f.msg.value = ''; refreshChat(); } catch (err) { toast(err.message, 'err'); }
+  });
+
+  const unsub = DB.subscribe(id, (row) => { a = { ...a, ...row }; refresh(false); }, () => refreshChat());
+  const poll = setInterval(() => { refresh(true); refreshChat(); }, DEMO ? 4000 : 10000);
+  S.cleanups.push(unsub, () => clearInterval(poll), () => { S.auctionRefresh = null; });
+}
+
+async function doBid(aid) {
+  const inp = $('#bid-amount'); if (!inp) return;
+  const amount = parseInt(digits(inp.value), 10);
+  if (!amount) return toast('請輸入出價金額（只能輸入數字）', 'err');
+  const me = myBidder();
+  if (!me) return openBidderModal(aid);
+  // ① 出價前一定先讀取「最新」價格，避免用舊畫面的價格出價
+  let a;
+  try { a = await DB.auction(aid); } catch (e) { return toast('讀取最新價格失敗，請重試', 'err'); }
+  if (!a || a.status !== 'active' || new Date(a.end_at) <= Date.now()) { toast('競標已結束', 'err'); return S.auctionRefresh && S.auctionRefresh(); }
+  const need = minNext(a);
+  // ② 前端先擋掉低於最低加價幅度的輸入（真正的防線在資料庫 bids_guard）
+  if (amount < need) { toast(`出價需至少 ${money(need)}（已為你填入最低一口）`, 'err'); inp.value = need; S.auctionRefresh && S.auctionRefresh(); return; }
+  if (amount > need + a.min_increment * 200) return toast('單次加價過高，請確認金額是否輸入正確', 'err');
+  openModal(`<div class="m-hd"><div><h3>確認出價</h3><p>${esc(a.title)}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <div class="m-bd" style="text-align:center"><p style="color:var(--muted);font-size:13px;letter-spacing:.2em">您的出價</p><p class="en" style="font-size:44px;color:var(--ink)">${money(amount)}</p>
+    <p style="font-size:13px;color:var(--ink2);margin-top:8px">以代稱 ${esc(me.alias || '')} 出價，送出後無法取消。<br>得標後僅提供銀行匯款、宅配寄出。</p></div>
+    <div class="m-ft"><button class="btn ghost" data-act="modal-close">再想想</button><button class="btn accent" id="bid-confirm">確認出價</button></div>`);
+  $('#bid-confirm').onclick = async (e) => {
+    e.target.disabled = true; e.target.textContent = '送出中…';
+    try {
+      await DB.placeBid(aid, me.token, amount);
+      closeModal(); toast('出價成功！您目前是最高出價者', 'ok'); if ($('#bid-amount')) $('#bid-amount').value = '';
+    } catch (err) { closeModal(); toast(err.message, 'err'); }
+    S.auctionRefresh && S.auctionRefresh();
+  };
+}
+
+function openBidderModal(aid) {
+  openModal(`<div class="m-hd"><div><h3>第一次出價 · 留下資料</h3><p>僅供得標後聯繫與寄送，不會公開。出價紀錄只顯示「姓氏＋電話末三碼」。</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <form class="m-bd" id="bidder-form" novalidate>
+      <div class="grid2"><label class="field"><span>姓名<em>*</em></span><input class="input" name="name" maxlength="30" autocomplete="name" required></label>
+      <label class="field"><span>手機<em>*</em></span><input class="input" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="0912345678" required></label></div>
+      <label class="field"><span>Email</span><input class="input" name="email" type="email" maxlength="100" autocomplete="email"></label>
+      <label class="field"><span>寄送地址<em>*</em></span><input class="input" name="address" maxlength="200" autocomplete="street-address" required></label>
+      <label style="display:flex;gap:10px;font-size:13px;color:var(--ink2);align-items:flex-start"><input type="checkbox" name="agree" style="margin-top:6px;accent-color:var(--accent)"> 我了解得標後須於 3 日內以<b>銀行匯款</b>付款，確認入帳後宅配寄出，競標商品不提供貨到付款。</label>
+      <button class="btn block" style="margin-top:22px" type="submit">儲存並繼續出價</button>
+    </form>`);
+  $('#bidder-form').addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.target;
+    const row = { name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim() || null, address: f.address.value.trim() };
+    if (!row.name) return toast('請填寫姓名', 'err');
+    if (!phoneOk(row.phone)) return toast('請填寫正確的手機號碼', 'err');
+    if (row.address.length < 5) return toast('請填寫完整寄送地址', 'err');
+    if (!f.agree.checked) return toast('請勾選同意競標付款方式', 'err');
+    const token = uuid();
+    try {
+      await DB.registerBidder({ token, ...row });   // 只寫入，不回讀
+      store.set('ih_bidder', { token, alias: row.name.slice(0, 1) + '＊＊·' + digits(row.phone).slice(-3) });
+      closeModal(); toast('資料已儲存', 'ok');
+      S.auctionRefresh && await S.auctionRefresh();
+      doBid(aid);
+    } catch (err) { toast(err.message, 'err'); }
+  });
+}
+
+/* ---------------- 購物車 / 結帳 ---------------- */
+function viewCart() {
+  const lines = cartLines();
+  if (!lines.length) return `<div class="wrap">${crumb(['購物車'])}<div class="empty"><p class="serif">購物車是空的</p><p>去逛逛島嶼職人的作品吧</p><a class="btn" style="margin-top:24px" href="#/">開始選物</a></div></div>`;
+  const sub = lines.reduce((s, l) => s + l.p.price * l.qty, 0);
+  return `<div class="wrap">${crumb(['購物車'])}
+    <div class="cart-layout"><div>
+      <h1 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:28px;margin-bottom:10px">購物車</h1>
+      ${lines.map(l => `<div class="cart-item"><a class="ph" href="#/p/${encodeURIComponent(l.p.id)}"><img src="${esc(imgOf(l.p))}" alt=""></a>
+        <div><p style="font-size:11.5px;letter-spacing:.2em;color:var(--muted)">${esc((CATS[l.p.category] || {}).full || '')}</p><h4>${esc(l.p.name)}</h4><p class="en" style="font-size:17px;letter-spacing:.06em">${money(l.p.price)}</p>
+          <div style="display:flex;gap:16px;align-items:center;margin-top:10px"><div class="qty"><button data-act="cart-qty" data-id="${esc(l.p.id)}" data-d="-1">−</button><input value="${l.qty}" readonly><button data-act="cart-qty" data-id="${esc(l.p.id)}" data-d="1">+</button></div>
+          <button data-act="cart-del" data-id="${esc(l.p.id)}" style="font-size:12.5px;color:var(--muted);text-decoration:underline">移除</button></div></div>
+        <b class="en" style="font-size:20px;font-weight:500">${money(l.p.price * l.qty)}</b></div>`).join('')}
+    </div>
+    <aside class="summary"><h3>訂單摘要</h3>
+      <div class="sum-row"><span>商品小計</span><span>${money(sub)}</span></div>
+      <div class="sum-row"><span>運費</span><span>${sub >= SHOP.freeShip ? '免運' : `${money(SHOP.shipCvs)} – ${money(SHOP.shipTransfer)}`}</span></div>
+      ${sub < SHOP.freeShip ? `<p style="font-size:12.5px;color:var(--accent);margin:4px 0">再買 ${money(SHOP.freeShip - sub)} 即可免運</p>` : ''}
+      <div class="sum-row total"><span>預估合計</span><b>${money(sub + shipFee(sub, 'cvs_cod'))}</b></div>
+      <a class="btn block" href="#/checkout" style="margin-top:18px">前往結帳</a>
+      <a class="btn ghost block" href="#/" style="margin-top:10px">繼續選物</a>
+    </aside></div></div>`;
+}
+
+function viewCheckout() {
+  const lines = cartLines();
+  if (!lines.length) return viewCart();
+  const sub = lines.reduce((s, l) => s + l.p.price * l.qty, 0);
+  return `<div class="wrap">${crumb(['購物車', '#/cart'], ['結帳'])}
+    <form class="cart-layout" id="co-form" novalidate><div>
+      <h1 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:28px;margin-bottom:24px">結帳</h1>
+      <div class="co-step"><h3><i>01</i>訂購人資料</h3>
+        <div class="grid2"><label class="field"><span>姓名<em>*</em></span><input class="input" name="name" maxlength="30" autocomplete="name"></label>
+        <label class="field"><span>手機<em>*</em></span><input class="input" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="0912345678"></label></div>
+        <label class="field"><span>Email</span><input class="input" name="email" type="email" maxlength="100" autocomplete="email"><small>用於寄送訂單通知（選填）</small></label>
+      </div>
+      <div class="co-step"><h3><i>02</i>付款與取貨方式</h3>
+        <div class="radio-cards">
+          <label class="radio-card on" data-pay="transfer"><input type="radio" name="payment" value="transfer" checked><div><b>銀行轉帳 / 匯款</b><small>宅配到府，運費 ${money(SHOP.shipTransfer)}　滿 ${money(SHOP.freeShip)} 免運</small></div></label>
+          <label class="radio-card" data-pay="cvs_cod"><input type="radio" name="payment" value="cvs_cod"><div><b>超商取貨付款</b><small>到店取貨時付款，運費 ${money(SHOP.shipCvs)}　滿 ${money(SHOP.freeShip)} 免運</small></div></label>
+        </div>
+        <div id="pay-transfer" style="margin-top:22px">
+          <div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)} ${esc(SHOP.bank.branch)}</dd><br><dt>帳號</dt><dd><b style="letter-spacing:.1em">${esc(SHOP.bank.account)}</b> <button type="button" data-act="copy" data-text="${esc(SHOP.bank.account.replace(/-/g, ''))}" style="font-size:12px;color:var(--accent);text-decoration:underline;margin-left:6px">複製</button></dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl>
+            <p style="font-size:12.5px;color:var(--muted);margin-top:6px">請於下單後 3 日內完成匯款。若尚未匯款，可先送出訂單，之後到「訂單查詢」補填末五碼。</p></div>
+          <label class="field"><span>匯款帳號末五碼</span><input class="input" name="last5" inputmode="numeric" maxlength="5" placeholder="例如 12345"></label>
+          <label class="field"><span>收件地址<em>*</em></span><input class="input" name="address" maxlength="200" autocomplete="street-address" placeholder="縣市、區、路名、門牌"></label>
+        </div>
+        <div id="pay-cvs" class="hide" style="margin-top:22px">
+          <label class="field"><span>超商<em>*</em></span><select class="select" name="cvs_brand"><option>7-ELEVEN</option><option>全家 FamilyMart</option><option>萊爾富 Hi-Life</option><option>OK mart</option></select></label>
+          <label class="field"><span>取貨門市名稱 / 店號<em>*</em></span><input class="input" name="cvs_store" maxlength="100" placeholder="例如：青田門市（店號 123456）"><small>可到各超商官網「門市查詢」找到店名與店號</small></label>
+        </div>
+      </div>
+      <div class="co-step"><h3><i>03</i>備註</h3><textarea class="textarea" name="note" maxlength="500" placeholder="包裝、送禮卡片、指定送達時段…（選填）"></textarea></div>
+    </div>
+    <aside class="summary"><h3>訂單明細</h3>
+      ${lines.map(l => `<div class="sum-row"><span>${esc(l.p.name)} × ${l.qty}</span><span>${money(l.p.price * l.qty)}</span></div>`).join('')}
+      <div class="sum-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:12px"><span>商品小計</span><span>${money(sub)}</span></div>
+      <div class="sum-row"><span>運費</span><span id="co-ship"></span></div>
+      <div class="sum-row total"><span>合計</span><b id="co-total"></b></div>
+      <button class="btn block" type="submit" id="co-submit" style="margin-top:18px">確認下單</button>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center">本站不提供線上刷卡，金額以系統確認為準</p>
+    </aside></form></div>`;
+}
+
+function initCheckout() {
+  const f = $('#co-form'); if (!f) return;
+  const sub = cartLines().reduce((s, l) => s + l.p.price * l.qty, 0);
+  const paint = () => {
+    const pay = f.payment.value, ship = shipFee(sub, pay);
+    $$('.radio-card', f).forEach(c => c.classList.toggle('on', c.dataset.pay === pay));
+    $('#pay-transfer').classList.toggle('hide', pay !== 'transfer'); $('#pay-cvs').classList.toggle('hide', pay !== 'cvs_cod');
+    $('#co-ship').textContent = ship ? money(ship) : '免運'; $('#co-total').textContent = money(sub + ship);
+  };
+  paint();
+  $$('input[name=payment]', f).forEach(r => r.addEventListener('change', paint));
+  f.last5.addEventListener('input', () => { f.last5.value = digits(f.last5.value).slice(0, 5); });
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const pay = f.payment.value;
+    const row = { buyer_name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim() || null, payment: pay, note: f.note.value.trim() || null,
+      items: S.cart.map(c => ({ id: c.id, qty: c.qty })) };   // 只送商品 id 與數量，價格由資料庫重新計算
+    if (!row.buyer_name) return toast('請填寫姓名', 'err');
+    if (!phoneOk(row.phone)) return toast('請填寫正確的手機號碼', 'err');
+    if (pay === 'transfer') {
+      row.address = f.address.value.trim(); row.transfer_last5 = f.last5.value || null;
+      if (row.address.length < 5) return toast('請填寫完整收件地址', 'err');
+      if (row.transfer_last5 && !/^\d{5}$/.test(row.transfer_last5)) return toast('末五碼需為 5 位數字', 'err');
+    } else {
+      row.cvs_brand = f.cvs_brand.value; row.cvs_store = f.cvs_store.value.trim();
+      if (!row.cvs_store) return toast('請填寫取貨門市', 'err');
+    }
+    const btn = $('#co-submit'); btn.disabled = true; btn.textContent = '送出中…';
+    try {
+      const no = await withCode('S', code => DB.createOrder({ ...row, order_no: code }));
+      const ship = shipFee(sub, pay);
+      S.cart = []; saveCart(); S.loaded = false;
+      app.innerHTML = `<div class="wrap fade-in"><div class="done-box"><div class="mark">${ICON.check}</div>
+        <p class="eyebrow">ORDER RECEIVED</p><h2 class="serif" style="font-weight:500;letter-spacing:.3em;margin:8px 0 18px">訂單已成立</h2>
+        <p style="color:var(--muted);font-size:13px;letter-spacing:.2em">訂單編號</p><p class="no">${esc(no)}</p>
+        <p style="font-size:12.5px;color:var(--muted)">請截圖或記下此編號，可在「訂單查詢」以編號＋手機查詢進度</p>
+        <p style="margin:22px 0 4px;font-size:14px">應付金額 <b class="en" style="font-size:24px">${money(sub + ship)}</b></p>
+        ${pay === 'transfer' ? `<div class="bank-box" style="text-align:left"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl>
+          <p style="font-size:12.5px;color:var(--muted)">${row.transfer_last5 ? `已收到末五碼 ${esc(row.transfer_last5)}，我們確認入帳後會盡快出貨。` : '匯款後請到「訂單查詢」填寫末五碼，方便我們對帳。'}</p></div>`
+          : `<p style="font-size:14px;color:var(--ink2);margin:14px 0">將寄送至 ${esc(row.cvs_brand)}「${esc(row.cvs_store)}」，到店取貨時付款。</p>`}
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px"><a class="btn ghost" href="#/lookup/order">查詢訂單</a><a class="btn" href="#/">繼續選物</a></div></div></div>`;
+      window.scrollTo(0, 0);
+    } catch (err) { toast(err.message, 'err'); btn.disabled = false; btn.textContent = '確認下單'; }
+  });
+}
+
+/* ---------------- 訂單 / 報名查詢 ---------------- */
+function viewLookup(tab) {
+  tab = tab === 'reg' ? 'reg' : 'order';
+  return `<div class="wrap">${crumb(['訂單查詢'])}
+    <div class="lookup">
+      <p class="eyebrow" style="text-align:center">TRACKING</p>
+      <h1 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:30px;text-align:center;margin:8px 0 34px">訂單與課程編號查詢</h1>
+      <div class="tabs"><button class="${tab === 'order' ? 'on' : ''}" data-act="lk-tab" data-v="order">商品 / 競標訂單</button><button class="${tab === 'reg' ? 'on' : ''}" data-act="lk-tab" data-v="reg">課程報名</button></div>
+      <form id="lk-form" novalidate>
+        <div class="grid2">
+          <label class="field"><span>${tab === 'order' ? '訂單編號' : '報名編號'}<em>*</em></span><input class="input" name="no" maxlength="20" placeholder="${tab === 'order' ? '例如 S261025K7QW3P' : '例如 R261025K7QW3P'}" style="text-transform:uppercase;letter-spacing:.1em"></label>
+          <label class="field"><span>${tab === 'order' ? '下單手機' : '報名電話'}<em>*</em></span><input class="input" name="phone" inputmode="tel" maxlength="20"></label>
+        </div>
+        <button class="btn block" type="submit">查詢</button>
+        <p style="font-size:12.5px;color:var(--muted);text-align:center;margin-top:12px">為保護個資，必須同時輸入編號與電話才能查詢，結果會隱藏姓名與地址。</p>
+      </form>
+      <div id="lk-result"></div>
+    </div></div>`;
+}
+async function doLookup(form) {
+  const tab = $('.tabs .on').dataset.v, no = form.no.value.trim().toUpperCase(), phone = form.phone.value.trim();
+  if (!/^[SAR][0-9]{6}[A-Z0-9]{6}$/.test(no)) return toast('編號格式不正確', 'err');
+  if (!phoneOk(phone)) return toast('請輸入正確的電話', 'err');
+  const box = $('#lk-result'); box.innerHTML = '<div class="loading" style="padding:40px"><i></i><i></i><i></i></div>';
+  try {
+    if (tab === 'order') {
+      const o = await DB.lookupOrder(no, phone);
+      if (!o) { box.innerHTML = '<div class="result-card empty" style="padding:40px">查無此訂單，請確認編號與手機是否正確</div>'; return; }
+      const steps = o.payment === 'cvs_cod' ? ['已下單', '待出貨', '已出貨', '已完成'] : ['待付款', '待確認匯款', '已付款', '已出貨', '已完成'];
+      const idx = Math.max(steps.indexOf(o.status), o.status === '待出貨' && o.payment === 'transfer' ? 2 : 0);
+      box.innerHTML = `<div class="result-card fade-in"><div class="rhd"><div><p style="font-size:12px;color:var(--muted);letter-spacing:.2em">${o.source === 'auction' ? '競標得標訂單' : '商品訂單'}</p><b>${esc(o.order_no)}</b></div>${statusTag(o.status)}</div>
+        ${o.status !== '已取消' ? `<div class="timeline">${steps.map((s, i) => `<div class="${i <= idx ? 'on' : ''}">${s}</div>`).join('')}</div>` : ''}
+        <dl class="kv" style="margin-top:14px"><dt>訂購人</dt><dd>${esc(o.buyer_name)}</dd><dt>下單時間</dt><dd>${fmtTime(o.created_at)}</dd>
+          <dt>付款方式</dt><dd>${o.payment === 'transfer' ? '銀行轉帳 / 匯款' : '超商取貨付款'}</dd>
+          ${o.payment === 'cvs_cod' ? `<dt>取貨門市</dt><dd>${esc(o.cvs_brand || '')} ${esc(o.cvs_store || '')}</dd>` : `<dt>末五碼</dt><dd>${o.transfer_last5 ? esc(o.transfer_last5) : '<span style="color:var(--warn)">尚未填寫</span>'}</dd>`}</dl>
+        <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px">${(o.items || []).map(i => `<div class="sum-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('')}
+          <div class="sum-row"><span>運費</span><span>${o.shipping ? money(o.shipping) : '免運'}</span></div><div class="sum-row total"><span>合計</span><b>${money(o.total)}</b></div></div>
+        ${o.payment === 'transfer' && ['待付款', '待確認匯款'].includes(o.status) ? `<div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl></div>
+          <form id="l5-form" style="display:flex;gap:10px"><input class="input" name="l5" inputmode="numeric" maxlength="5" placeholder="填寫匯款帳號末五碼" value="${esc(o.transfer_last5 || '')}"><button class="btn" type="submit">${o.transfer_last5 ? '更新' : '送出'}</button></form>` : ''}
+      </div>`;
+      const l5 = $('#l5-form');
+      if (l5) {
+        l5.l5.addEventListener('input', () => { l5.l5.value = digits(l5.l5.value).slice(0, 5); });
+        l5.addEventListener('submit', async e => { e.preventDefault(); try { await DB.submitLast5(no, phone, l5.l5.value); toast('已送出末五碼，我們確認入帳後會通知你', 'ok'); doLookup(form); } catch (err) { toast(err.message, 'err'); } });
+      }
+    } else {
+      const r = await DB.lookupReg(no, phone);
+      if (!r) { box.innerHTML = '<div class="result-card empty" style="padding:40px">查無此報名，請確認編號與電話是否正確</div>'; return; }
+      box.innerHTML = `<div class="result-card fade-in"><div class="rhd"><div><p style="font-size:12px;color:var(--muted);letter-spacing:.2em">課程報名</p><b>${esc(r.reg_no)}</b></div>${statusTag(r.status)}</div>
+        <dl class="kv"><dt>報名人</dt><dd>${esc(r.name)}</dd><dt>課程</dt><dd>${esc(r.course_name)}</dd><dt>日期</dt><dd>${fmtDate(r.course_date)}</dd><dt>時段</dt><dd>${esc(r.slot)}</dd><dt>人數</dt><dd>${r.people} 位</dd><dt>金額</dt><dd>${money(r.amount)}</dd><dt>報名時間</dt><dd>${fmtTime(r.created_at)}</dd></dl>
+        <p style="font-size:13px;color:var(--muted);margin-top:14px">${r.status === '待確認' ? '我們會在 24 小時內以電話與你確認並提供匯款資訊。' : r.status === '已確認' ? `報名已確認，期待在 ${esc(SHOP.address)} 與你見面。` : ''}</p></div>`;
+    }
+  } catch (err) { box.innerHTML = ''; toast(err.message, 'err'); }
+}
+
+function viewContact() {
+  return `<div class="wrap">${crumb(['聯絡我們'])}
+    <div class="cat-hero"><div><p class="eyebrow">CONTACT</p><h1>聯絡我們</h1></div><p>無論是想訂製一枚刻字對戒、為茶席挑選一只花器，或安排企業包班體驗課，都歡迎與我們聊聊。</p></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:48px;padding:56px 0 96px">
+      <dl class="spec" style="margin:0">
+        <div><dt>工作室</dt><dd>${esc(SHOP.address)}</dd></div><div><dt>營業時間</dt><dd>${esc(SHOP.hours)}</dd></div>
+        <div><dt>電話</dt><dd>${esc(SHOP.phone)}</dd></div><div><dt>Email</dt><dd>${esc(SHOP.email)}</dd></div><div><dt>LINE</dt><dd>${esc(SHOP.line)}</dd></div>
+      </dl>
+      <div style="background:var(--surface);border:1px solid var(--line);padding:36px">
+        <p class="eyebrow">CUSTOM ORDER</p><h3 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:22px;margin:8px 0 12px">專屬訂製</h3>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:24px">告訴我們你的想法：尺寸、材質、刻字、預算與希望完成的日期。我們會在 1–2 個工作天內親自回覆。</p>
+        <button class="btn-custom" data-act="custom" data-subject="聯絡我們">${ICON.chat}一鍵私訊客製化需求</button>
+      </div>
+    </div></div>`;
+}
+
+/* ---------------- 彈窗 / 客製化私訊 ---------------- */
+function openModal(html, wide) {
+  const r = $('#modal-root');
+  r.innerHTML = `<div class="modal-mask" data-act="modal-close"></div><div class="modal ${wide ? 'wide' : ''}">${html}</div>`;
+  r.classList.add('open'); document.body.style.overflow = 'hidden';
+  setTimeout(() => { const i = $('.modal input:not([type=hidden]):not([type=checkbox]),.modal textarea', r); if (i && window.innerWidth > 700) i.focus(); }, 50);
+}
+function closeModal() { const r = $('#modal-root'); r.classList.remove('open'); r.innerHTML = ''; document.body.style.overflow = ''; }
+
+function openCustomModal(subject) {
+  openModal(`<div class="m-hd"><div><p class="eyebrow">CUSTOM ORDER</p><h3>客製化訂製需求</h3><p>${esc(subject || '')}</p></div><button class="x-btn" data-act="modal-close" aria-label="關閉">${ICON.x}</button></div>
+    <form class="m-bd" id="custom-form" novalidate>
+      <label class="field"><span>你的訂製需求<em>*</em></span><textarea class="textarea" name="content" maxlength="2000" placeholder="例如：想訂製一對內圈刻字的銀戒，戒圍 12 / 9 號，希望 12 月前完成，預算約 6,000 元。"></textarea></label>
+      <div class="grid2"><label class="field"><span>稱呼<em>*</em></span><input class="input" name="name" maxlength="30" autocomplete="name"></label>
+      <label class="field"><span>聯絡電話<em>*</em></span><input class="input" name="phone" inputmode="tel" maxlength="20" autocomplete="tel"></label></div>
+      <label class="field"><span>LINE ID 或 Email</span><input class="input" name="contact" maxlength="100"></label>
+      <button class="btn block" type="submit">送出私訊</button>
+      <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">你的聯絡資料僅供本工作室回覆使用，不會公開或提供給第三方。</p>
+    </form>`);
+  $('#custom-form').addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.target;
+    const row = { name: f.name.value.trim(), phone: f.phone.value.trim(), contact: f.contact.value.trim() || null, subject: (subject || '').slice(0, 100), content: f.content.value.trim() };
+    if (row.content.length < 2) return toast('請描述你的訂製需求', 'err');
+    if (!row.name) return toast('請填寫稱呼', 'err');
+    if (!phoneOk(row.phone)) return toast('請填寫正確的聯絡電話', 'err');
+    const b = $('button[type=submit]', f); b.disabled = true; b.textContent = '送出中…';
+    try {
+      await DB.createMessage(row);   // 只寫入，不回讀
+      $('.modal').innerHTML = `<div class="m-bd" style="text-align:center;padding:56px 32px"><div class="done-box" style="border:0;margin:0;padding:0;background:none"><div class="mark">${ICON.check}</div></div>
+        <h3 class="serif" style="font-weight:500;letter-spacing:.3em;font-size:20px">已收到你的訊息</h3><p style="color:var(--muted);margin:12px 0 28px;font-size:14px">我們會在 1–2 個工作天內與你聯繫。</p><button class="btn" data-act="modal-close">好的</button></div>`;
+    } catch (err) { toast(err.message, 'err'); b.disabled = false; b.textContent = '送出私訊'; }
+  });
+}
+
+/* =========================================================================
+   11. 管理員後台（/admin 或 #/admin）
+   -------------------------------------------------------------------------
+   【硬核防護】
+   ‧ 不使用任何前端密碼比對。登入完全交給 Supabase Auth（signInWithPassword）。
+   ‧ 進入 #/admin 時，畫面先保持「空白」，接著呼叫 supabase.auth.getSession()：
+       沒有合法 Session → 立刻清空畫面、清掉後台暫存資料、重新導向回首頁
+       有 Session 但不在 admins 名單 → 強制登出並導回首頁
+   ‧ 就算有人改掉這段 JavaScript 硬把後台畫面叫出來，也只會看到空表格——
+     因為所有資料讀寫都會被資料庫 RLS（is_admin()）拒絕。真正的鎖在資料庫。
+   ‧ 管理員登入入口：在網址後面加上 #/admin/login（不在網站任何地方顯示連結）
+========================================================================= */
+let ADM = { tab: 'dashboard', data: {} };
+
+function kickOut() {
+  app.innerHTML = '';
+  ADM = { tab: 'dashboard', data: {} };
+  document.body.classList.remove('is-admin');
+  const base = location.pathname.replace(/\/admin\/?$/, '/');
+  location.replace(base + location.search + '#/');
+  return false;
+}
+async function guardAdmin() {
+  if (DEMO) return true;   // 示範模式：沒有連接資料庫，不存在任何真實個資
+  try {
+    const session = await DB.session();             // = supabase.auth.getSession()
+    if (!session) return kickOut();
+    if (!(await DB.isAdmin())) { await DB.signOut(); return kickOut(); }
+    return true;
+  } catch (e) { return kickOut(); }
+}
+if (sb) sb.auth.onAuthStateChange((event, session) => { if ((event === 'SIGNED_OUT' || !session) && S.route[0] === 'admin' && S.route[1] !== 'login') kickOut(); });
+
+function renderAdminLogin() {
+  document.body.classList.add('is-admin');
+  app.innerHTML = `<div class="login-wrap"><form class="login-card" id="login-form" novalidate>
+    <span class="brand"><span class="brand-mark">島</span><span class="brand-text"><b>島嶼手作</b><small>ADMIN CONSOLE</small></span></span>
+    <h1>管理員登入</h1>
+    ${DEMO ? `<p style="font-size:13.5px;color:var(--ink2);margin:10px 0 24px;line-height:1.9">目前為<b style="color:var(--warn)">示範模式</b>（尚未填入 Supabase 金鑰），後台只會顯示你這台瀏覽器裡的示範資料。<br>填好金鑰後，這裡會改為 Supabase 帳號密碼登入。</p>
+      <button class="btn block" type="submit">進入示範後台</button>`
+    : `<p style="font-size:13px;color:var(--muted);margin:6px 0 26px">請使用在 Supabase 建立的管理員帳號登入</p>
+      <label class="field"><span>Email</span><input class="input" name="email" type="email" autocomplete="username"></label>
+      <label class="field"><span>密碼</span><input class="input" name="password" type="password" autocomplete="current-password"></label>
+      <button class="btn block" type="submit">登入</button>`}
+    <a href="#/" style="display:block;text-align:center;margin-top:18px;font-size:12.5px;color:var(--muted);letter-spacing:.16em">← 回到網站</a>
+  </form></div>`;
+  $('#login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (DEMO) { location.hash = '#/admin'; return; }
+    const f = e.target, b = $('button[type=submit]', f); b.disabled = true; b.textContent = '登入中…';
+    try {
+      await DB.signIn(f.email.value.trim(), f.password.value);
+      if (!(await DB.isAdmin())) { await DB.signOut(); throw new Error('此帳號沒有管理員權限'); }
+      f.password.value = ''; location.hash = '#/admin';
+    } catch (err) { toast(err.message, 'err'); b.disabled = false; b.textContent = '登入'; }
+  });
+}
+
+const ADM_TABS = [
+  ['dashboard', '總覽'], ['products', '商品管理'], ['courses', '課程管理'], ['auctions', '競標管理'],
+  ['orders', '商品訂單'], ['registrations', '課程報名'], ['messages', '客製化私訊']
+];
+
+async function renderAdmin(tab) {
+  document.body.classList.add('is-admin');
+  app.innerHTML = '';                       // 驗證完成前不渲染任何後台 UI
+  const ok = await guardAdmin(); if (!ok) return;
+  if (!ADM_TABS.some(t => t[0] === tab)) tab = 'dashboard';
+  ADM.tab = tab;
+  app.innerHTML = `<div class="adm">
+    <aside class="adm-side">
+      <div class="adm-mobile-bar"><span>島嶼手作 · 後台</span><button data-act="adm-logout" style="color:inherit;text-decoration:underline;font-size:12px">登出</button></div>
+      <a class="brand" href="#/admin"><span class="brand-mark">島</span><span class="brand-text"><b>島嶼手作</b><small>ADMIN CONSOLE</small></span></a>
+      <nav class="adm-nav">${ADM_TABS.map(([k, t]) => `<a href="#/admin/${k}" class="${k === tab ? 'on' : ''}">${t}<span class="cnt hide" data-cnt="${k}"></span></a>`).join('')}</nav>
+      <div class="foot"><a href="#/" target="_blank" rel="noopener">↗ 開啟前台</a>${DEMO ? '<span style="color:var(--warn)">示範模式</span>' : '<button data-act="adm-logout">登出</button>'}</div>
+    </aside>
+    <section class="adm-main" id="adm-main"><div class="loading"><i></i><i></i><i></i></div></section></div>`;
+  await DB.finalize();
+  await admLoad(tab);
+}
+
+async function admFetch(...tables) {
+  await Promise.all(tables.map(async t => { ADM.data[t] = await DB.list(t); }));
+}
+async function admCounts() {
+  try {
+    await admFetch('orders', 'registrations', 'messages');
+    const c = { orders: ADM.data.orders.filter(o => ['待付款', '待確認匯款', '待出貨'].includes(o.status)).length, registrations: ADM.data.registrations.filter(r => r.status === '待確認').length, messages: ADM.data.messages.filter(m => m.status === '未讀').length };
+    $$('[data-cnt]').forEach(el => { const n = c[el.dataset.cnt]; el.textContent = n; el.classList.toggle('hide', !n); });
+    return c;
+  } catch (e) { return {}; }
+}
+async function admLoad(tab) {
+  const main = $('#adm-main'); if (!main) return;
+  try {
+    const cnt = await admCounts();
+    if (tab === 'dashboard') { await admFetch('auctions', 'products'); main.innerHTML = admDashboard(cnt); }
+    if (tab === 'products') { await admFetch('products'); main.innerHTML = admProducts(); }
+    if (tab === 'courses') { await admFetch('courses'); main.innerHTML = admCourses(); }
+    if (tab === 'auctions') { await admFetch('auctions'); main.innerHTML = admAuctions(); }
+    if (tab === 'orders') main.innerHTML = admOrders();
+    if (tab === 'registrations') main.innerHTML = admRegs();
+    if (tab === 'messages') main.innerHTML = admMessages();
+  } catch (e) { main.innerHTML = `<div class="empty">讀取失敗：${esc(e.message)}</div>`; }
+}
+const admHead = (t, d, right = '') => `<div class="adm-head"><div><h1>${t}</h1><p>${d}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap">${right}</div></div>`;
+
+function admDashboard(cnt) {
+  const o = ADM.data.orders, live = ADM.data.auctions.filter(a => a.status === 'active');
+  const revenue = o.filter(x => ['已付款', '已出貨', '已完成'].includes(x.status)).reduce((s, x) => s + (x.total || 0), 0);
+  return admHead('總覽', `${new Date().toLocaleDateString('zh-TW', { ...tz, dateStyle: 'full' })}${DEMO ? ' · 示範模式' : ''}`, `<button class="btn ghost sm" data-act="adm-finalize">結算已到期競標</button>`) +
+    `<div class="stat-grid">
+      <div class="stat"><span>待處理訂單</span><b>${cnt.orders || 0}</b><a href="#/admin/orders">查看訂單 →</a></div>
+      <div class="stat"><span>待確認報名</span><b>${cnt.registrations || 0}</b><a href="#/admin/registrations">查看報名 →</a></div>
+      <div class="stat"><span>未讀私訊</span><b>${cnt.messages || 0}</b><a href="#/admin/messages">查看私訊 →</a></div>
+      <div class="stat"><span>已收款金額</span><b style="font-size:30px">${money(revenue)}</b><a href="#/admin/auctions">競標進行中 ${live.length} 件 →</a></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+      <div class="panel"><div class="hd"><b>最新訂單</b><a class="link-more" href="#/admin/orders">全部</a></div>${o.slice(0, 6).map(x => `<div class="bid-row" style="grid-template-columns:1fr auto auto;cursor:pointer" data-act="order-detail" data-id="${esc(x.id)}"><div><span class="mono" style="font-size:13px">${esc(x.order_no)}</span><time>${esc(x.buyer_name)} · ${fmtTime(x.created_at)}</time></div>${statusTag(x.status)}<b>${money(x.total)}</b></div>`).join('') || '<div class="empty" style="padding:30px">尚無訂單</div>'}</div>
+      <div class="panel"><div class="hd"><b>最新私訊</b><a class="link-more" href="#/admin/messages">全部</a></div>${ADM.data.messages.slice(0, 6).map(m => `<div class="bid-row" style="grid-template-columns:1fr auto"><div>${esc(m.name)}　<span style="color:var(--muted);font-size:12.5px">${esc(m.subject || '')}</span><time>${esc((m.content || '').slice(0, 40))}${(m.content || '').length > 40 ? '…' : ''}</time></div>${statusTag(m.status)}</div>`).join('') || '<div class="empty" style="padding:30px">尚無私訊</div>'}</div>
+    </div>
+    <div class="panel" style="margin-top:20px"><div class="hd"><b>庫存提醒</b><small>庫存 3 件以下</small></div>${ADM.data.products.filter(p => p.stock <= 3).map(p => `<div class="bid-row" style="grid-template-columns:1fr auto"><div>${esc(p.name)}<time>${esc((CATS[p.category] || {}).full || '')}</time></div><b style="color:${p.stock ? 'var(--warn)' : 'var(--danger)'}">${p.stock} 件</b></div>`).join('') || '<div class="empty" style="padding:30px">庫存充足</div>'}</div>`;
+}
+
+function admProducts() {
+  const rows = ADM.data.products;
+  return admHead('商品管理', '新增、修改、刪除六個專區的商品；關閉「上架」即可暫時下架。', `<button class="btn sm" data-act="prod-edit">＋ 新增商品</button>`) +
+    `<div class="filter-bar" id="prod-filter"><button class="on" data-act="prod-filter" data-v="">全部 ${rows.length}</button>${Object.entries(CATS).map(([k, c]) => `<button data-act="prod-filter" data-v="${k}">${c.name} ${rows.filter(p => p.category === k).length}</button>`).join('')}</div>
+    <div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>商品名稱</th><th>專區</th><th>價格</th><th>庫存</th><th>上架</th><th></th></tr></thead><tbody>
+    ${rows.map(p => `<tr data-cat-row="${esc(p.category)}"><td><img class="thumb" src="${esc(imgOf(p))}" alt=""></td><td><b style="font-weight:500">${esc(p.name)}</b><div style="font-size:12px;color:var(--muted)">${esc(p.subtitle || '')}</div></td>
+      <td><span class="tag ${(CATS[p.category] || {}).group === 'literati' ? 'lit' : 'craft'}">${esc((CATS[p.category] || {}).full || p.category)}</span></td><td class="num">${money(p.price)}</td>
+      <td class="num" style="color:${p.stock <= 3 ? 'var(--danger)' : 'inherit'}">${p.stock}</td>
+      <td><button class="switch ${p.active ? 'on' : ''}" data-act="toggle-active" data-table="products" data-id="${esc(p.id)}" aria-label="上架切換"></button></td>
+      <td><div class="acts"><button class="btn ghost sm" data-act="prod-edit" data-id="${esc(p.id)}">編輯</button><button class="btn danger sm" data-act="adm-del" data-table="products" data-id="${esc(p.id)}">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="7" class="empty">尚無商品</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function imgField(cur) {
+  return `<div class="field"><span>商品圖片</span><div class="img-up"><img id="img-prev" src="${esc(cur)}" alt=""><div>
+    <input type="file" id="img-file" accept="image/jpeg,image/png,image/webp" style="font-size:13px"><small>建議 4:5 直式、1200px 以上、5MB 以內。未上傳則使用內建插畫。</small>
+    <input type="hidden" name="image_url"></div></div></div>`;
+}
+function bindImgField(form, onUrl) {
+  $('#img-file').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('只接受 JPG / PNG / WebP 圖片', 'err');
+    if (file.size > 5 * 1024 * 1024) return toast('圖片請小於 5MB', 'err');
+    toast('圖片上傳中…');
+    try { const url = await DB.upload(file); form.image_url.value = url; $('#img-prev').src = url; onUrl && onUrl(url); toast('圖片已上傳', 'ok'); }
+    catch (err) { toast('上傳失敗：' + err.message, 'err'); }
+  });
+}
+
+function openProductForm(id) {
+  const p = id ? ADM.data.products.find(x => x.id === id) : { category: 'oil', active: true, stock: 1, price: 0, sort: (ADM.data.products.length || 0) + 1 };
+  openModal(`<div class="m-hd"><div><h3>${id ? '編輯商品' : '新增商品'}</h3><p>${id ? esc(p.name) : '填寫後按儲存即上架'}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <form class="m-bd" id="prod-form" novalidate>
+      ${imgField(imgOf(p))}
+      <div class="grid2"><label class="field"><span>商品名稱<em>*</em></span><input class="input" name="name" maxlength="60" value="${esc(p.name || '')}"></label>
+      <label class="field"><span>專區<em>*</em></span><select class="select" name="category">${Object.entries(CATS).map(([k, c]) => `<option value="${k}" ${p.category === k ? 'selected' : ''}>${GROUPS[c.group].name} · ${c.full}</option>`).join('')}</select></label></div>
+      <label class="field"><span>副標（規格）</span><input class="input" name="subtitle" maxlength="80" value="${esc(p.subtitle || '')}" placeholder="例如：10ml ／ 單方精油"></label>
+      <div class="grid2"><label class="field"><span>價格（NT$）<em>*</em></span><input class="input" name="price" inputmode="numeric" value="${p.price ?? 0}"></label>
+      <label class="field"><span>庫存<em>*</em></span><input class="input" name="stock" inputmode="numeric" value="${p.stock ?? 0}"></label></div>
+      <label class="field"><span>商品介紹</span><textarea class="textarea" name="description" maxlength="3000">${esc(p.description || '')}</textarea></label>
+      <div class="grid2"><label class="field"><span>排序（數字小的排前面）</span><input class="input" name="sort" inputmode="numeric" value="${p.sort ?? 0}"></label>
+      <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:28px"><input type="checkbox" name="active" ${p.active ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px"> <span style="margin:0">上架中</span></label></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px"><button type="button" class="btn ghost" data-act="modal-close">取消</button><button class="btn" type="submit">儲存</button></div>
+    </form>`, true);
+  const f = $('#prod-form'); f.image_url.value = p.image_url || '';
+  bindImgField(f);
+  f.category.addEventListener('change', () => { if (!f.image_url.value) $('#img-prev').src = ART[f.category.value]; });
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const row = { name: f.name.value.trim(), category: f.category.value, subtitle: f.subtitle.value.trim() || null, price: parseInt(digits(f.price.value), 10), stock: parseInt(digits(f.stock.value) || '0', 10), description: f.description.value.trim() || null, sort: parseInt(digits(f.sort.value) || '0', 10), active: f.active.checked, image_url: f.image_url.value || null, art: f.category.value };
+    if (!row.name) return toast('請填寫商品名稱', 'err');
+    if (!(row.price >= 0)) return toast('請填寫正確價格', 'err');
+    if (id) row.id = id;
+    try { await DB.save('products', row); closeModal(); toast('已儲存', 'ok'); S.loaded = false; admLoad('products'); } catch (err) { toast(err.message, 'err'); }
+  });
+}
+
+function admCourses() {
+  return admHead('課程管理', '設定課程日期、時段與每時段名額；關閉「上架」即可暫停報名。', `<button class="btn sm" data-act="course-edit">＋ 新增課程</button>`) +
+    `<div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>課程</th><th>費用 / 人</th><th>名額 / 時段</th><th>開課日期</th><th>上架</th><th></th></tr></thead><tbody>
+    ${ADM.data.courses.map(c => { const nd = nextDates(c); return `<tr><td><img class="thumb" src="${esc(imgOf(c))}" alt="" style="width:64px;height:48px"></td><td><b style="font-weight:500">${esc(c.name)}</b><div style="font-size:12px;color:var(--muted)">${esc((c.slots || []).join('、'))}</div></td>
+      <td class="num">${money(c.price)}</td><td class="num">${c.capacity} 位</td><td style="font-size:12.5px">${nd.slice(0, 3).map(d => esc(d.slice(5))).join('、') || '<span style="color:var(--danger)">無未來場次</span>'}${nd.length > 3 ? ` 等 ${nd.length} 場` : ''}</td>
+      <td><button class="switch ${c.active ? 'on' : ''}" data-act="toggle-active" data-table="courses" data-id="${esc(c.id)}"></button></td>
+      <td><div class="acts"><button class="btn ghost sm" data-act="course-edit" data-id="${esc(c.id)}">編輯</button><button class="btn danger sm" data-act="adm-del" data-table="courses" data-id="${esc(c.id)}">刪除</button></div></td></tr>`; }).join('') || '<tr><td colspan="7" class="empty">尚無課程</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function openCourseForm(id) {
+  const c = id ? ADM.data.courses.find(x => x.id === id) : { category: 'wood', active: true, capacity: 8, price: 1500, dates: [], slots: ['10:00 – 13:00', '14:00 – 17:00'], duration: '3 小時', sort: (ADM.data.courses.length || 0) + 1 };
+  let dates = [...(c.dates || [])].sort();
+  openModal(`<div class="m-hd"><div><h3>${id ? '編輯課程' : '新增課程'}</h3><p>${id ? esc(c.name) : ''}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <form class="m-bd" id="course-form" novalidate>
+      ${imgField(imgOf(c))}
+      <div class="grid2"><label class="field"><span>課程名稱<em>*</em></span><input class="input" name="name" maxlength="60" value="${esc(c.name || '')}"></label>
+      <label class="field"><span>類別</span><select class="select" name="category">${Object.entries(CATS).map(([k, x]) => `<option value="${k}" ${c.category === k ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label></div>
+      <label class="field"><span>副標</span><input class="input" name="subtitle" maxlength="80" value="${esc(c.subtitle || '')}"></label>
+      <div class="grid2"><label class="field"><span>費用 / 人（NT$）<em>*</em></span><input class="input" name="price" inputmode="numeric" value="${c.price ?? 0}"></label>
+      <label class="field"><span>每時段名額（限額）<em>*</em></span><input class="input" name="capacity" inputmode="numeric" value="${c.capacity ?? 8}"></label></div>
+      <div class="grid2"><label class="field"><span>課程長度</span><input class="input" name="duration" maxlength="20" value="${esc(c.duration || '')}"></label>
+      <label class="field"><span>排序</span><input class="input" name="sort" inputmode="numeric" value="${c.sort ?? 0}"></label></div>
+      <div class="field"><span>開課日期<em>*</em></span><div style="display:flex;gap:8px"><input class="input" type="date" id="date-add" min="${todayStr()}"><button type="button" class="btn ghost sm" id="date-add-btn" style="min-height:48px">加入</button></div><div class="date-chips" id="date-chips"></div></div>
+      <label class="field"><span>時段（每行一個）<em>*</em></span><textarea class="textarea" name="slots" style="min-height:90px" placeholder="10:00 – 13:00">${esc((c.slots || []).join('\n'))}</textarea></label>
+      <label class="field"><span>課程介紹</span><textarea class="textarea" name="description">${esc(c.description || '')}</textarea></label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><input type="checkbox" name="active" ${c.active ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px"> 上架中（開放報名）</label>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="modal-close">取消</button><button class="btn" type="submit">儲存</button></div>
+    </form>`, true);
+  const f = $('#course-form'); f.image_url.value = c.image_url || ''; bindImgField(f);
+  const paintDates = () => { $('#date-chips').innerHTML = dates.map(d => `<span>${esc(d)} <button type="button" data-d="${esc(d)}" aria-label="移除">×</button></span>`).join('') || '<small style="color:var(--muted)">尚未加入日期</small>'; };
+  paintDates();
+  $('#date-add-btn').onclick = () => { const v = $('#date-add').value; if (!v) return; if (!dates.includes(v)) dates.push(v); dates.sort(); paintDates(); };
+  $('#date-chips').onclick = e => { const b = e.target.closest('[data-d]'); if (b) { dates = dates.filter(d => d !== b.dataset.d); paintDates(); } };
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const row = { name: f.name.value.trim(), category: f.category.value, subtitle: f.subtitle.value.trim() || null, price: parseInt(digits(f.price.value), 10), capacity: parseInt(digits(f.capacity.value), 10), duration: f.duration.value.trim() || null, sort: parseInt(digits(f.sort.value) || '0', 10),
+      dates, slots: f.slots.value.split('\n').map(s => s.trim()).filter(Boolean), description: f.description.value.trim() || null, active: f.active.checked, image_url: f.image_url.value || null, art: 'course-' + (['wood', 'metal', 'pottery'].includes(f.category.value) ? f.category.value : 'wood') };
+    if (!row.name) return toast('請填寫課程名稱', 'err');
+    if (!(row.price >= 0) || !(row.capacity >= 1)) return toast('請填寫正確的費用與名額', 'err');
+    if (!row.dates.length) return toast('請至少加入一個開課日期', 'err');
+    if (!row.slots.length) return toast('請至少填寫一個時段', 'err');
+    if (id) row.id = id;
+    try { await DB.save('courses', row); closeModal(); toast('已儲存', 'ok'); S.loaded = false; admLoad('courses'); } catch (err) { toast(err.message, 'err'); }
+  });
+}
+
+function admAuctions() {
+  return admHead('競標管理', '上架競標藝品、查看出價者聯絡資料；到期會自動結標並把得標者轉成「匯款」訂單。', `<button class="btn ghost sm" data-act="adm-finalize">結算已到期競標</button><button class="btn sm" data-act="auc-edit">＋ 新增競標</button>`) +
+    `<div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>藝品</th><th>目前價格</th><th>出價</th><th>結標時間</th><th>狀態</th><th>顯示</th><th></th></tr></thead><tbody>
+    ${ADM.data.auctions.map(a => { const live = a.status === 'active'; return `<tr><td><img class="thumb" src="${esc(imgOf(a))}" alt="" style="width:52px;height:52px"></td><td><b style="font-weight:500">${esc(a.title)}</b><div style="font-size:12px;color:var(--muted)">起標 ${money(a.start_price)} · 每口 ${money(a.min_increment)}</div></td>
+      <td class="num">${money(a.current_price)}</td><td class="num">${a.bid_count} 次${a.leader_alias ? `<div style="font-size:12px;color:var(--muted)">${esc(a.leader_alias)}</div>` : ''}</td><td class="num" style="font-size:12.5px">${fmtTime(a.end_at)}${live ? `<div style="color:var(--danger)" data-countdown="${esc(a.end_at)}">${cdText(a.end_at)}</div>` : ''}</td>
+      <td>${live ? '<span class="tag warn">進行中</span>' : a.result === 'sold' ? '<span class="tag ok">已得標・已轉訂單</span>' : '<span class="tag muted">流標</span>'}</td>
+      <td><button class="switch ${a.active ? 'on' : ''}" data-act="toggle-active" data-table="auctions" data-id="${esc(a.id)}"></button></td>
+      <td><div class="acts"><button class="btn ghost sm" data-act="auc-bids" data-id="${esc(a.id)}">出價者</button>${live ? `<button class="btn ghost sm" data-act="auc-edit" data-id="${esc(a.id)}">編輯</button><button class="btn ghost sm" data-act="auc-end" data-id="${esc(a.id)}">立即結標</button>` : ''}<button class="btn danger sm" data-act="adm-del" data-table="auctions" data-id="${esc(a.id)}">刪除</button></div></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">尚無競標</td></tr>'}
+    </tbody></table></div>`;
+}
+
+const toLocalInput = (iso) => { const d = new Date(new Date(iso).getTime() + 8 * 3600e3); return d.toISOString().slice(0, 16); };
+const fromLocalInput = (v) => new Date(v + ':00+08:00').toISOString();
+
+function openAuctionForm(id) {
+  const a = id ? ADM.data.auctions.find(x => x.id === id) : { start_price: 5000, min_increment: 200, start_at: new Date().toISOString(), end_at: new Date(Date.now() + 3 * 864e5).toISOString(), active: true, bid_count: 0 };
+  const locked = a.bid_count > 0;
+  openModal(`<div class="m-hd"><div><h3>${id ? '編輯競標' : '新增競標'}</h3><p>${locked ? '已有人出價，價格相關欄位已鎖定，以維持公正' : '所有時間皆為台灣時間'}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <form class="m-bd" id="auc-form" novalidate>
+      ${imgField(imgOf(a))}
+      <div class="grid2"><label class="field"><span>藝品名稱<em>*</em></span><input class="input" name="title" maxlength="60" value="${esc(a.title || '')}"></label>
+      <label class="field"><span>分類標籤</span><input class="input" name="category" maxlength="20" value="${esc(a.category || '')}" placeholder="例如：玉石"></label></div>
+      <div class="grid2"><label class="field"><span>起標價（NT$）<em>*</em></span><input class="input" name="start_price" inputmode="numeric" value="${a.start_price}" ${locked ? 'disabled' : ''}></label>
+      <label class="field"><span>每口最低加價（NT$）<em>*</em></span><input class="input" name="min_increment" inputmode="numeric" value="${a.min_increment}" ${locked ? 'disabled' : ''}></label></div>
+      <div class="grid2"><label class="field"><span>開始時間<em>*</em></span><input class="input" type="datetime-local" name="start_at" value="${toLocalInput(a.start_at)}" ${locked ? 'disabled' : ''}></label>
+      <label class="field"><span>結標時間<em>*</em></span><input class="input" type="datetime-local" name="end_at" value="${toLocalInput(a.end_at)}"></label></div>
+      <label class="field"><span>藝品介紹</span><textarea class="textarea" name="description">${esc(a.description || '')}</textarea></label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><input type="checkbox" name="active" ${a.active ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px"> 在前台顯示</label>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="modal-close">取消</button><button class="btn" type="submit">儲存</button></div>
+    </form>`, true);
+  const f = $('#auc-form'); f.image_url.value = a.image_url || ''; bindImgField(f);
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const row = { title: f.title.value.trim(), category: f.category.value.trim() || null, description: f.description.value.trim() || null, end_at: fromLocalInput(f.end_at.value), active: f.active.checked, image_url: f.image_url.value || null };
+    if (!row.title) return toast('請填寫藝品名稱', 'err');
+    if (!locked) {
+      Object.assign(row, { start_price: parseInt(digits(f.start_price.value), 10), min_increment: parseInt(digits(f.min_increment.value), 10), start_at: fromLocalInput(f.start_at.value) });
+      if (!(row.start_price > 0) || !(row.min_increment > 0)) return toast('請填寫正確的起標價與加價幅度', 'err');
+      row.current_price = row.start_price;
+      if (new Date(row.end_at) <= new Date(row.start_at)) return toast('結標時間必須晚於開始時間', 'err');
+    }
+    if (new Date(row.end_at) <= Date.now()) return toast('結標時間必須在未來', 'err');
+    if (id) row.id = id; else Object.assign(row, { status: 'active', bid_count: 0, art: 'auction-jade' });
+    try { await DB.save('auctions', row); closeModal(); toast('已儲存', 'ok'); S.loaded = false; admLoad('auctions'); } catch (err) { toast(err.message, 'err'); }
+  });
+}
+
+async function openAuctionBids(id) {
+  const a = ADM.data.auctions.find(x => x.id === id);
+  let list = [];
+  try { list = await DB.adminBids(id); } catch (e) { return toast(e.message, 'err'); }
+  openModal(`<div class="m-hd"><div><h3>出價者明細</h3><p>${esc(a ? a.title : '')} · 共 ${list.length} 筆（此資料僅管理員可見）</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <div class="m-bd" style="padding:0"><div class="table-wrap" style="border:0"><table class="tbl" style="min-width:640px"><thead><tr><th>#</th><th>金額</th><th>姓名</th><th>電話</th><th>Email / 地址</th><th>時間</th></tr></thead><tbody>
+    ${list.map((b, i) => `<tr ${i === 0 ? 'style="background:var(--accent-soft)"' : ''}><td>${i === 0 ? '<span class="tag ok">最高</span>' : list.length - i}</td><td class="num"><b>${money(b.amount)}</b></td><td>${esc(b.bidders ? b.bidders.name : '—')}</td><td class="mono">${esc(b.bidders ? b.bidders.phone : '')}</td><td style="font-size:12.5px">${esc(b.bidders ? (b.bidders.email || '') : '')}<div style="color:var(--muted)">${esc(b.bidders ? b.bidders.address : '')}</div></td><td class="num" style="font-size:12.5px">${fmtTime(b.created_at)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">尚無出價</td></tr>'}
+    </tbody></table></div></div>`, true);
+}
+
+function admOrders(filter = '') {
+  const all = ADM.data.orders, rows = filter === 'shop' || filter === 'auction' ? all.filter(o => o.source === filter) : filter ? all.filter(o => o.status === filter) : all;
+  return admHead('商品訂單', '前台下單與競標得標訂單都會出現在這裡。點一下列可查看完整資料。', `<button class="btn ghost sm" data-act="export" data-table="orders">匯出 CSV</button>`) +
+    `<div class="filter-bar">${[['', '全部'], ['shop', '商店訂單'], ['auction', '競標訂單'], ...['待付款', '待確認匯款', '待出貨', '已出貨', '已完成', '已取消'].map(s => [s, s])].map(([v, t]) => `<button class="${filter === v ? 'on' : ''}" data-act="order-filter" data-v="${esc(v)}">${t} ${v === '' ? all.length : v === 'shop' || v === 'auction' ? all.filter(o => o.source === v).length : all.filter(o => o.status === v).length}</button>`).join('')}</div>
+    <div class="table-wrap"><table class="tbl"><thead><tr><th>訂單編號</th><th>時間</th><th>來源</th><th>訂購人</th><th>電話</th><th>付款</th><th>末五碼 / 門市</th><th>金額</th><th>狀態</th></tr></thead><tbody>
+    ${rows.map(o => `<tr class="click" data-act="order-detail" data-id="${esc(o.id)}"><td class="mono">${esc(o.order_no)}</td><td class="num" style="font-size:12.5px">${fmtTime(o.created_at)}</td><td>${o.source === 'auction' ? '<span class="tag craft">競標</span>' : '<span class="tag">商店</span>'}</td>
+      <td>${esc(o.buyer_name)}</td><td class="mono">${esc(o.phone)}</td><td class="num">${o.payment === 'transfer' ? '匯款' : '超商取付'}</td>
+      <td style="font-size:12.5px">${o.payment === 'transfer' ? (o.transfer_last5 ? `<b class="mono">${esc(o.transfer_last5)}</b>` : '<span style="color:var(--muted)">未填</span>') : esc((o.cvs_brand || '') + ' ' + (o.cvs_store || ''))}</td>
+      <td class="num"><b>${money(o.total)}</b></td>
+      <td data-stop="1"><select class="mini-select" data-act-change="status" data-table="orders" data-id="${esc(o.id)}">${ORDER_STATUS.map(s => `<option ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('') || '<tr><td colspan="9" class="empty">沒有符合的訂單</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function openOrderDetail(id) {
+  const o = ADM.data.orders.find(x => x.id === id); if (!o) return;
+  openModal(`<div class="m-hd"><div><h3 class="mono" style="letter-spacing:.1em">${esc(o.order_no)}</h3><p>${o.source === 'auction' ? '競標得標訂單（僅限匯款）' : '商店訂單'} · ${fmtTime(o.created_at)}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div>
+    <div class="m-bd">
+      <dl class="kv"><dt>訂購人</dt><dd>${esc(o.buyer_name)}</dd><dt>電話</dt><dd><a href="tel:${esc(digits(o.phone))}" style="color:var(--accent)">${esc(o.phone)}</a></dd><dt>Email</dt><dd>${esc(o.email || '—')}</dd>
+      <dt>付款方式</dt><dd>${o.payment === 'transfer' ? '銀行轉帳 / 匯款' : '超商取貨付款'}</dd>
+      ${o.payment === 'transfer' ? `<dt>匯款末五碼</dt><dd>${esc(o.transfer_last5 || '尚未填寫')}</dd><dt>收件地址</dt><dd>${esc(o.address || '')}</dd>` : `<dt>取貨門市</dt><dd>${esc(o.cvs_brand || '')}　${esc(o.cvs_store || '')}</dd>`}
+      <dt>備註</dt><dd style="white-space:pre-wrap">${esc(o.note || '—')}</dd></dl>
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px">${(o.items || []).map(i => `<div class="sum-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('')}
+      <div class="sum-row"><span>運費</span><span>${o.shipping ? money(o.shipping) : '免運'}</span></div><div class="sum-row total"><span>合計</span><b>${money(o.total)}</b></div></div>
+      <label class="field" style="margin-top:16px"><span>訂單狀態</span><select class="select" data-act-change="status" data-table="orders" data-id="${esc(o.id)}">${ORDER_STATUS.map(s => `<option ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+    </div>`);
+}
+
+function admRegs(filter = '') {
+  const all = ADM.data.registrations, rows = filter ? all.filter(r => r.status === filter) : all;
+  return admHead('課程報名', '客人送出的課程報名。確認電話聯繫後，把狀態改為「已確認」。', `<button class="btn ghost sm" data-act="export" data-table="registrations">匯出 CSV</button>`) +
+    `<div class="filter-bar">${['', ...REG_STATUS].map(s => `<button class="${filter === s ? 'on' : ''}" data-act="reg-filter" data-v="${esc(s)}">${s || '全部'} ${s ? all.filter(r => r.status === s).length : all.length}</button>`).join('')}</div>
+    <div class="table-wrap"><table class="tbl"><thead><tr><th>報名編號</th><th>課程</th><th>日期 / 時段</th><th>姓名</th><th>電話</th><th>人數</th><th>金額</th><th>備註</th><th>狀態</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td class="mono">${esc(r.reg_no)}<div style="font-size:11.5px;color:var(--muted)">${fmtTime(r.created_at)}</div></td><td>${esc(r.course_name)}</td><td class="num" style="font-size:13px">${esc(r.course_date)}<div style="color:var(--muted)">${esc(r.slot)}</div></td>
+      <td>${esc(r.name)}</td><td class="mono"><a href="tel:${esc(digits(r.phone))}">${esc(r.phone)}</a></td><td class="num">${r.people}</td><td class="num">${money(r.amount)}</td><td style="font-size:12.5px;max-width:200px">${esc(r.note || '')}</td>
+      <td><select class="mini-select" data-act-change="status" data-table="registrations" data-id="${esc(r.id)}">${REG_STATUS.map(s => `<option ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('') || '<tr><td colspan="9" class="empty">沒有符合的報名</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function admMessages(filter = '') {
+  const all = ADM.data.messages, rows = filter ? all.filter(m => m.status === filter) : all;
+  const cls = { '未讀': 'unread', '已讀': 'read', '已聯絡': 'contacted' };
+  return admHead('客製化私訊', '客人從商品頁、課程頁、聯絡我們送出的訂製需求。', `<button class="btn ghost sm" data-act="export" data-table="messages">匯出 CSV</button>`) +
+    `<div class="filter-bar">${['', ...MSG_STATUS].map(s => `<button class="${filter === s ? 'on' : ''}" data-act="msg-filter" data-v="${esc(s)}">${s || '全部'} ${s ? all.filter(m => m.status === s).length : all.length}</button>`).join('')}</div>
+    ${rows.map(m => `<div class="msg-card ${cls[m.status] || ''}"><div>
+      <div class="mh">${statusTag(m.status)}<b>${esc(m.name)}</b><a class="mono" href="tel:${esc(digits(m.phone))}" style="color:var(--accent)">${esc(m.phone)}</a>${m.contact ? `<span>${esc(m.contact)}</span>` : ''}<span>· ${fmtTime(m.created_at)}</span></div>
+      ${m.subject ? `<div style="margin-top:8px"><span class="tag">${esc(m.subject)}</span></div>` : ''}
+      <div class="mc">${esc(m.content)}</div></div>
+      <div class="acts">${m.status !== '已讀' ? `<button class="btn ghost sm" data-act="msg-status" data-id="${esc(m.id)}" data-v="已讀">標記已讀</button>` : ''}${m.status !== '已聯絡' ? `<button class="btn sm" data-act="msg-status" data-id="${esc(m.id)}" data-v="已聯絡">標記已聯絡</button>` : ''}${m.status !== '未讀' ? `<button class="btn ghost sm" data-act="msg-status" data-id="${esc(m.id)}" data-v="未讀">改回未讀</button>` : ''}<button class="btn danger sm" data-act="adm-del" data-table="messages" data-id="${esc(m.id)}">刪除</button></div></div>`).join('') || '<div class="empty">沒有符合的私訊</div>'}`;
+}
+
+function exportCsv(table) {
+  const rows = ADM.data[table] || []; if (!rows.length) return toast('沒有資料可匯出', 'err');
+  const cols = { orders: ['order_no', 'created_at', 'source', 'buyer_name', 'phone', 'email', 'payment', 'transfer_last5', 'cvs_brand', 'cvs_store', 'address', 'total', 'status', 'note'], registrations: ['reg_no', 'created_at', 'course_name', 'course_date', 'slot', 'name', 'phone', 'people', 'amount', 'status', 'note'], messages: ['created_at', 'status', 'name', 'phone', 'contact', 'subject', 'content'] }[table];
+  const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const csv = '﻿' + [cols.join(','), ...rows.map(r => cols.map(c => cell(c === 'created_at' ? fmtTime(r[c]) : r[c])).join(','))].join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `${table}-${todayStr()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* =========================================================================
+   12. 全站點擊事件（事件委派）
+========================================================================= */
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!e.target.closest('.nav-group')) $$('.nav-group.open').forEach(x => x.classList.remove('open'));
+  if (!e.target.closest('.theme-sw')) $('#theme-sw').classList.remove('open');
+  if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  switch (act) {
+    case 'toggle-dd': { const g = el.closest('.nav-group'); const was = g.classList.contains('open'); $$('.nav-group.open').forEach(x => x.classList.remove('open')); g.classList.toggle('open', !was); break; }
+    case 'theme-toggle': $('#theme-sw').classList.toggle('open'); break;
+    case 'set-theme': setTheme(el.dataset.val); $('#theme-sw').classList.remove('open'); toast('已切換為「' + el.querySelector('b').textContent + '」'); break;
+    case 'drawer-open': document.body.classList.add('drawer-open'); break;
+    case 'drawer-close': document.body.classList.remove('drawer-open'); break;
+    case 'custom': openCustomModal(el.dataset.subject); break;
+    case 'modal-close': closeModal(); break;
+    case 'qty': { const i = $('#pd-qty'), max = +($('[data-max]') || {}).dataset?.max || 99; i.value = Math.max(1, Math.min(max, (parseInt(i.value, 10) || 1) + +el.dataset.d)); break; }
+    case 'add-cart': addToCart(id, Math.max(1, parseInt($('#pd-qty').value, 10) || 1)); break;
+    case 'buy-now': { const n = Math.max(1, parseInt($('#pd-qty').value, 10) || 1); const p = S.products.find(x => x.id === id); const cur = S.cart.find(x => x.id === id); if (!cur) { if (n > p.stock) return toast(`庫存只剩 ${p.stock} 件`, 'err'); S.cart.push({ id, qty: n }); saveCart(); } location.hash = '#/checkout'; break; }
+    case 'cart-qty': { const c = S.cart.find(x => x.id === id), p = S.products.find(x => x.id === id); if (!c) break; c.qty += +el.dataset.d; if (p && c.qty > p.stock) { c.qty = p.stock; toast(`庫存只剩 ${p.stock} 件`, 'err'); } if (c.qty <= 0) S.cart = S.cart.filter(x => x.id !== id); saveCart(); router(); break; }
+    case 'cart-del': S.cart = S.cart.filter(x => x.id !== id); saveCart(); router(); break;
+    case 'copy': try { await navigator.clipboard.writeText(el.dataset.text); toast('已複製帳號'); } catch (err) { toast('請手動複製'); } break;
+    case 'lk-tab': location.hash = '#/lookup/' + (el.dataset.v === 'reg' ? 'reg' : 'order'); break;
+    case 'bid-step': { const i = $('#bid-amount'); if (i) { i.value = el.dataset.v; i.focus(); } break; }
+    case 'bid': doBid(id); break;
+    case 'bidder-reset': store.del('ih_bidder'); toast('已清除，下次出價時可重新填寫'); S.auctionRefresh && S.auctionRefresh(); break;
+    // ---- 後台 ----
+    case 'adm-logout': await DB.signOut(); kickOut(); break;
+    case 'adm-finalize': { const n = await DB.finalize(); toast(n ? `已結算 ${n} 件競標` : '目前沒有到期的競標', n ? 'ok' : ''); admLoad(ADM.tab); break; }
+    case 'prod-edit': openProductForm(id); break;
+    case 'course-edit': openCourseForm(id); break;
+    case 'auc-edit': openAuctionForm(id); break;
+    case 'auc-bids': openAuctionBids(id); break;
+    case 'auc-end': {
+      openModal(`<div class="m-hd"><div><h3>立即結標？</h3><p>結標後若有人出價，系統會立刻把最高出價者轉成「匯款」訂單。</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div><div class="m-ft"><button class="btn ghost" data-act="modal-close">取消</button><button class="btn" id="end-ok">確定結標</button></div>`);
+      $('#end-ok').onclick = async () => { try { await DB.update('auctions', id, { end_at: new Date(Date.now() - 1000).toISOString() }); await DB.finalize(); closeModal(); toast('已結標', 'ok'); S.loaded = false; admLoad('auctions'); } catch (err) { toast(err.message, 'err'); } };
+      break;
+    }
+    case 'toggle-active': {
+      const t = el.dataset.table, row = (ADM.data[t] || []).find(x => x.id === id); if (!row) break;
+      try { await DB.update(t, id, { active: !row.active }); row.active = !row.active; el.classList.toggle('on', row.active); S.loaded = false; toast(row.active ? '已上架' : '已下架'); } catch (err) { toast(err.message, 'err'); }
+      break;
+    }
+    case 'adm-del': {
+      openModal(`<div class="m-hd"><div><h3>確定要刪除嗎？</h3><p>刪除後無法復原。${el.dataset.table === 'courses' || el.dataset.table === 'products' ? '若只是暫時不賣，建議改用「下架」。' : ''}</p></div><button class="x-btn" data-act="modal-close">${ICON.x}</button></div><div class="m-ft"><button class="btn ghost" data-act="modal-close">取消</button><button class="btn danger" id="del-ok">確定刪除</button></div>`);
+      $('#del-ok').onclick = async () => { try { await DB.remove(el.dataset.table, id); closeModal(); toast('已刪除'); S.loaded = false; admLoad(ADM.tab); } catch (err) { closeModal(); toast(/foreign key|violates/i.test(err.message) ? '此課程已有報名紀錄，無法刪除（請改用下架）' : err.message, 'err'); } };
+      break;
+    }
+    case 'prod-filter': $$('#prod-filter button').forEach(b => b.classList.toggle('on', b === el)); $$('[data-cat-row]').forEach(tr => tr.classList.toggle('hide', !!el.dataset.v && tr.dataset.catRow !== el.dataset.v)); break;
+    case 'order-filter': $('#adm-main').innerHTML = admOrders(el.dataset.v); break;
+    case 'reg-filter': $('#adm-main').innerHTML = admRegs(el.dataset.v); break;
+    case 'msg-filter': $('#adm-main').innerHTML = admMessages(el.dataset.v); break;
+    case 'order-detail': if (!e.target.closest('[data-stop]')) openOrderDetail(id); break;
+    case 'msg-status': {
+      try { await DB.update('messages', id, { status: el.dataset.v }); const m = ADM.data.messages.find(x => x.id === id); if (m) m.status = el.dataset.v; const f = $('.filter-bar .on'); $('#adm-main').innerHTML = admMessages(f ? f.dataset.v : ''); admCounts(); toast('已標記為「' + el.dataset.v + '」'); } catch (err) { toast(err.message, 'err'); }
+      break;
+    }
+    case 'export': exportCsv(el.dataset.table); break;
+  }
+});
+document.addEventListener('change', async (e) => {
+  const el = e.target.closest('[data-act-change="status"]'); if (!el) return;
+  const t = el.dataset.table, id = el.dataset.id;
+  try { await DB.update(t, id, { status: el.value }); const r = (ADM.data[t] || []).find(x => x.id === id); if (r) r.status = el.value; toast('狀態已更新為「' + el.value + '」', 'ok'); admCounts(); } catch (err) { toast(err.message, 'err'); }
+});
+document.addEventListener('submit', (e) => { if (e.target.id === 'lk-form') { e.preventDefault(); doLookup(e.target); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeMenus(); } });
+
+// 每秒更新所有倒數計時；競標頁倒數歸零時自動結算並刷新
+setInterval(() => {
+  $$('[data-countdown]').forEach(el => {
+    const t = cdText(el.dataset.countdown);
+    el.textContent = el.classList.contains('cd-pill') ? (t === '已結標' ? t : '倒數 ' + t) : t;
+    if (t === '已結標' && el.dataset.live && !el.dataset.fired) { el.dataset.fired = 1; DB.finalize().then(() => S.auctionRefresh && S.auctionRefresh()); }
+  });
+}, 1000);
+
+/* =========================================================================
+   13. 啟動
+========================================================================= */
+$('#year').textContent = new Date().getFullYear();
+$('#foot-addr').textContent = SHOP.address + ' · ' + SHOP.phone;
+paintCartCount();
+if (DEMO) {
+  const bar = document.createElement('div'); bar.className = 'demo-bar';
+  bar.innerHTML = '<b>示範模式</b>　尚未連接 Supabase，資料只存在此瀏覽器 <button style="margin-left:8px;text-decoration:underline;font-size:12px;color:var(--muted)" onclick="this.parentNode.remove()">隱藏</button>';
+  document.body.appendChild(bar);
+}
+router();
+</script>
+</body>
+</html>
