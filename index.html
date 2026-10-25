@@ -28,7 +28,8 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0c3dja2VhanRzbmRndnZzcGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4OTMwNTMsImV4cCI6MjEwODQ2OTA1M30.T4NR0tAQ5beJRAfXhww0sK_k42EYzG9PRLPe_SzUOss";   // 例如 "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
 
   const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // 自動去掉網址後面多餘的路徑（例如 /rest/v1/），只保留 https://xxxx.supabase.co
+    ? window.supabase.createClient((SUPABASE_URL.trim().match(/^https?:\/\/[^\/]+/) || [SUPABASE_URL.trim()])[0], SUPABASE_ANON_KEY.trim(), {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
       })
     : null;
@@ -43,17 +44,18 @@
     name: '島嶼手作',
     en: 'ISLAND HANDMADE STUDIO',
     bank: {
-      code: '812',
-      bankName: '台新國際商業銀行',
-      branch: '大安分行',
-      account: '2888-01-0012345-6',
-      holder: '島嶼手作工藝有限公司'
+      // 尚未開立帳戶前請保持空白 ''；填好後網站會自動在結帳頁顯示帳號
+      code: '',        // 銀行代碼，例如 '812'
+      bankName: '',    // 銀行名稱，例如 '台新國際商業銀行'
+      branch: '',      // 分行，例如 '新竹分行'
+      account: '',     // 帳號，例如 '2888-01-0012345-6'
+      holder: ''       // 戶名
     },
-    phone: '02-2345-6789',
-    email: 'hello@island-handmade.tw',
-    line: '@islandhandmade',
-    address: '台北市大安區青田街 7 巷 3 號 1 樓',
-    hours: '週三至週日 11:00 – 19:00（週一、二公休）',
+    phone: '0976-903-418',
+    email: 'yunlianglin18@gmail.com',
+    line: '0976903418',
+    address: '新竹市東區中華路一段 2 巷 129 號',
+    hours: '採預約制，來訪前請先以電話或 LINE 聯繫',
     freeShip: 3000,     // 滿額免運（需與 SQL 內 orders_guard 一致）
     shipTransfer: 80,   // 匯款宅配運費
     shipCvs: 60         // 超商取貨付款運費
@@ -595,18 +597,18 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
     <nav class="nav" id="nav" aria-label="主選單">
       <a class="nav-link" href="#/" data-nav="home">首頁</a>
       <div class="nav-group" data-group="literati">
-        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">文人雅士<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">文房清供<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
         <div class="dd" role="menu">
-          <div class="dd-head"><span class="en">LITERATI</span><b>文人雅士</b></div>
+          <div class="dd-head"><span class="en">SCHOLAR’S STUDIO</span><b>文房清供</b></div>
           <a class="dd-item" href="#/c/oil" data-cat="oil"><span>精油專區</span><span class="en">AROMA</span></a>
           <a class="dd-item" href="#/c/jade" data-cat="jade"><span>玉石專區</span><span class="en">JADE</span></a>
           <a class="dd-item" href="#/c/tea" data-cat="tea"><span>好茶專區</span><span class="en">TEA</span></a>
         </div>
       </div>
       <div class="nav-group" data-group="craft">
-        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">精緻工藝<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <button class="nav-link" data-act="toggle-dd" aria-haspopup="true">匠心器作<svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
         <div class="dd" role="menu">
-          <div class="dd-head"><span class="en">FINE CRAFT</span><b>精緻工藝</b></div>
+          <div class="dd-head"><span class="en">ARTISAN CRAFT</span><b>匠心器作</b></div>
           <a class="dd-item" href="#/c/metal" data-cat="metal"><span>金工專區</span><span class="en">METAL</span></a>
           <a class="dd-item" href="#/c/wood" data-cat="wood"><span>木工專區</span><span class="en">WOOD</span></a>
           <a class="dd-item" href="#/c/pottery" data-cat="pottery"><span>陶藝專區</span><span class="en">CERAMIC</span></a>
@@ -662,12 +664,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
     <button class="x-btn" data-act="drawer-close" aria-label="關閉"><svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg></button>
   </div>
   <div class="d-other"><a href="#/" data-nav="home">首頁<span class="en">HOME</span></a></div>
-  <div class="d-lit"><h4><i></i>文人雅士</h4>
+  <div class="d-lit"><h4><i></i>文房清供</h4>
     <a href="#/c/oil" data-cat="oil">精油專區<span class="en">AROMA</span></a>
     <a href="#/c/jade" data-cat="jade">玉石專區<span class="en">JADE</span></a>
     <a href="#/c/tea" data-cat="tea">好茶專區<span class="en">TEA</span></a>
   </div>
-  <div class="d-craft"><h4><i></i>精緻工藝</h4>
+  <div class="d-craft"><h4><i></i>匠心器作</h4>
     <a href="#/c/metal" data-cat="metal">金工專區<span class="en">METAL</span></a>
     <a href="#/c/wood" data-cat="wood">木工專區<span class="en">WOOD</span></a>
     <a href="#/c/pottery" data-cat="pottery">陶藝專區<span class="en">CERAMIC</span></a>
@@ -690,8 +692,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
         <span class="brand"><span class="brand-mark">島</span><span class="brand-text"><b>島嶼手作</b><small>ISLAND HANDMADE STUDIO</small></span></span>
         <p style="margin-top:20px;color:var(--muted);font-size:13.5px;line-height:2;max-width:300px">尋訪島嶼職人，以手的溫度，留住時間的痕跡。每一件作品都獨一無二，也歡迎與我們聊聊你的專屬訂製。</p>
       </div>
-      <div><h5>文人雅士</h5><ul><li><a href="#/c/oil">精油專區</a></li><li><a href="#/c/jade">玉石專區</a></li><li><a href="#/c/tea">好茶專區</a></li></ul></div>
-      <div><h5>精緻工藝</h5><ul><li><a href="#/c/metal">金工專區</a></li><li><a href="#/c/wood">木工專區</a></li><li><a href="#/c/pottery">陶藝專區</a></li></ul></div>
+      <div><h5>文房清供</h5><ul><li><a href="#/c/oil">精油專區</a></li><li><a href="#/c/jade">玉石專區</a></li><li><a href="#/c/tea">好茶專區</a></li></ul></div>
+      <div><h5>匠心器作</h5><ul><li><a href="#/c/metal">金工專區</a></li><li><a href="#/c/wood">木工專區</a></li><li><a href="#/c/pottery">陶藝專區</a></li></ul></div>
       <div><h5>服務</h5><ul><li><a href="#/courses">體驗課程報名</a></li><li><a href="#/auctions">藝品競標</a></li><li><a href="#/lookup">訂單 / 報名查詢</a></li><li><a href="#/contact">聯絡我們</a></li></ul></div>
     </div>
     <div class="foot-bottom"><span id="foot-addr"></span><span>© <span id="year"></span> ISLAND HANDMADE STUDIO</span></div>
@@ -745,6 +747,12 @@ function toast(msg, type = '') {
   setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, type === 'err' ? 4200 : 2800);
 }
 
+// 匯款資訊：尚未填寫帳號時，改為顯示「另行通知」
+function bankDl(amount) {
+  const b = SHOP.bank;
+  if (!b.account) return `<p style="color:var(--ink2)">本店匯款帳號將於訂單確認後，以電話或 LINE 另行提供給您。</p><p style="font-size:12.5px;color:var(--muted)">電話 / LINE：${esc(SHOP.phone)}${amount ? `　應付金額 ${money(amount)}` : ''}</p>`;
+  return `<dl><dt>銀行</dt><dd>${b.code ? '(' + esc(b.code) + ') ' : ''}${esc(b.bankName)} ${esc(b.branch)}</dd><br><dt>帳號</dt><dd><b style="letter-spacing:.1em">${esc(b.account)}</b> <button type="button" data-act="copy" data-text="${esc(b.account.replace(/-/g, ''))}" style="font-size:12px;color:var(--accent);text-decoration:underline;margin-left:6px">複製</button></dd><br><dt>戶名</dt><dd>${esc(b.holder)}</dd>${amount ? `<br><dt>金額</dt><dd>${money(amount)}</dd>` : ''}</dl>`;
+}
 const ICON = {
   chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M8 10h8M8 13h5"/></svg>',
   arrow: '<svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
@@ -859,8 +867,8 @@ const CATS = {
   pottery: { name: '陶藝', full: '陶藝專區', en: 'CERAMIC · KILN', group: 'craft', desc: '柴燒、穴窯與手捏陶器。火與土的偶然，讓每一件作品都無法複製，是器，也是風景。' }
 };
 const GROUPS = {
-  literati: { name: '文人雅士', en: 'LITERATI', cats: ['oil', 'jade', 'tea'], desc: '一爐香、一方玉、一盞茶。文人書房裡的雅事，是讓心沉靜下來的日常儀式。' },
-  craft:    { name: '精緻工藝', en: 'FINE CRAFT', cats: ['metal', 'wood', 'pottery'], desc: '金屬的鍛打、木材的刨削、陶土的焚燒。三種材質，三種與時間對話的方式。' }
+  literati: { name: '文房清供', en: 'SCHOLAR’S STUDIO', cats: ['oil', 'jade', 'tea'], desc: '古人於書齋案頭，焚一爐香、置一方玉、煮一盞茶，謂之「清供」。不求繁華，只求一室清雅、一念安然。' },
+  craft:    { name: '匠心器作', en: 'ARTISAN CRAFT', cats: ['metal', 'wood', 'pottery'], desc: '金屬的鍛打、木材的刨削、陶土的焚燒。三種材質，三種與時間對話的方式。' }
 };
 const ORDER_STATUS = ['待付款', '待確認匯款', '已付款', '待出貨', '已出貨', '已完成', '已取消'];
 const REG_STATUS = ['待確認', '已確認', '已完成', '已取消'];
@@ -1262,7 +1270,7 @@ function viewHome() {
   <section class="hero"><div class="wrap hero-grid">
     <div>
       <p class="eyebrow">Island Handmade Studio · 職人選物</p>
-      <h1>一器一物，<br>皆是時間的手跡。</h1>
+      <h1>物有其性，<br>器載其心。</h1>
       <p class="lead">精油、玉石、好茶，與金工、木工、陶藝。我們走訪島嶼上的職人工作室，把慢下來的生活，送到你的手中。</p>
       <div class="hero-cta"><a class="btn" href="#/c/oil">開始選物</a><a class="btn ghost" href="#/courses">預約體驗課</a></div>
       <div class="hero-stats"><div><b>${S.products.length}</b><span>件選物</span></div><div><b>${S.courses.length}</b><span>堂體驗課</span></div><div><b>${live.length}</b><span>件競標中</span></div></div>
@@ -1270,7 +1278,7 @@ function viewHome() {
     <div class="hero-visual">
       <div class="main"><img src="${esc(hero ? imgOf(hero) : ART.pottery)}" alt=""></div>
       <div class="sub"><img src="${esc(hero2 ? imgOf(hero2) : ART.tea)}" alt=""></div>
-      <div class="vert">手作之美　在於不完美</div>
+      <div class="vert">人間有味是清歡</div>
     </div>
   </div></section>
   ${colSec('literati', 1)}
@@ -1517,7 +1525,7 @@ async function initAuction(id) {
         <div class="cur-meta"><span>出價 ${a.bid_count} 次</span>${a.leader_alias ? `<span>得標者 ${esc(a.leader_alias)}</span>` : ''}</div></div>
         ${mine ? `<div class="ended-box"><p class="serif" style="letter-spacing:.2em;font-size:17px;margin-bottom:6px">🎉 恭喜您得標！</p>
           <p style="font-size:13.5px;color:var(--ink2)">系統已自動為您成立訂單（僅限匯款）：</p><p class="en" style="font-size:24px;margin:6px 0">${esc(mine.order_no)}</p>
-          <div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd><br><dt>金額</dt><dd>${money(mine.total)}</dd></dl></div>
+          <div class="bank-box">${bankDl(mine.total)}</div>
           <a class="btn block" href="#/lookup/order">匯款後填寫末五碼</a></div>` : ''}`;
       return;
     }
@@ -1669,8 +1677,8 @@ function viewCheckout() {
           <label class="radio-card" data-pay="cvs_cod"><input type="radio" name="payment" value="cvs_cod"><div><b>超商取貨付款</b><small>到店取貨時付款，運費 ${money(SHOP.shipCvs)}　滿 ${money(SHOP.freeShip)} 免運</small></div></label>
         </div>
         <div id="pay-transfer" style="margin-top:22px">
-          <div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)} ${esc(SHOP.bank.branch)}</dd><br><dt>帳號</dt><dd><b style="letter-spacing:.1em">${esc(SHOP.bank.account)}</b> <button type="button" data-act="copy" data-text="${esc(SHOP.bank.account.replace(/-/g, ''))}" style="font-size:12px;color:var(--accent);text-decoration:underline;margin-left:6px">複製</button></dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl>
-            <p style="font-size:12.5px;color:var(--muted);margin-top:6px">請於下單後 3 日內完成匯款。若尚未匯款，可先送出訂單，之後到「訂單查詢」補填末五碼。</p></div>
+          <div class="bank-box">${bankDl()}
+            ${SHOP.bank.account ? '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">請於下單後 3 日內完成匯款。若尚未匯款，可先送出訂單，之後到「訂單查詢」補填末五碼。</p>' : ''}</div>
           <label class="field"><span>匯款帳號末五碼</span><input class="input" name="last5" inputmode="numeric" maxlength="5" placeholder="例如 12345"></label>
           <label class="field"><span>收件地址<em>*</em></span><input class="input" name="address" maxlength="200" autocomplete="street-address" placeholder="縣市、區、路名、門牌"></label>
         </div>
@@ -1728,7 +1736,7 @@ function initCheckout() {
         <p style="color:var(--muted);font-size:13px;letter-spacing:.2em">訂單編號</p><p class="no">${esc(no)}</p>
         <p style="font-size:12.5px;color:var(--muted)">請截圖或記下此編號，可在「訂單查詢」以編號＋手機查詢進度</p>
         <p style="margin:22px 0 4px;font-size:14px">應付金額 <b class="en" style="font-size:24px">${money(sub + ship)}</b></p>
-        ${pay === 'transfer' ? `<div class="bank-box" style="text-align:left"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl>
+        ${pay === 'transfer' ? `<div class="bank-box" style="text-align:left">${bankDl()}
           <p style="font-size:12.5px;color:var(--muted)">${row.transfer_last5 ? `已收到末五碼 ${esc(row.transfer_last5)}，我們確認入帳後會盡快出貨。` : '匯款後請到「訂單查詢」填寫末五碼，方便我們對帳。'}</p></div>`
           : `<p style="font-size:14px;color:var(--ink2);margin:14px 0">將寄送至 ${esc(row.cvs_brand)}「${esc(row.cvs_store)}」，到店取貨時付款。</p>`}
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px"><a class="btn ghost" href="#/lookup/order">查詢訂單</a><a class="btn" href="#/">繼續選物</a></div></div></div>`;
@@ -1774,7 +1782,7 @@ async function doLookup(form) {
           ${o.payment === 'cvs_cod' ? `<dt>取貨門市</dt><dd>${esc(o.cvs_brand || '')} ${esc(o.cvs_store || '')}</dd>` : `<dt>末五碼</dt><dd>${o.transfer_last5 ? esc(o.transfer_last5) : '<span style="color:var(--warn)">尚未填寫</span>'}</dd>`}</dl>
         <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px">${(o.items || []).map(i => `<div class="sum-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('')}
           <div class="sum-row"><span>運費</span><span>${o.shipping ? money(o.shipping) : '免運'}</span></div><div class="sum-row total"><span>合計</span><b>${money(o.total)}</b></div></div>
-        ${o.payment === 'transfer' && ['待付款', '待確認匯款'].includes(o.status) ? `<div class="bank-box"><dl><dt>銀行</dt><dd>(${esc(SHOP.bank.code)}) ${esc(SHOP.bank.bankName)}</dd><br><dt>帳號</dt><dd>${esc(SHOP.bank.account)}</dd><br><dt>戶名</dt><dd>${esc(SHOP.bank.holder)}</dd></dl></div>
+        ${o.payment === 'transfer' && ['待付款', '待確認匯款'].includes(o.status) ? `<div class="bank-box">${bankDl()}</div>
           <form id="l5-form" style="display:flex;gap:10px"><input class="input" name="l5" inputmode="numeric" maxlength="5" placeholder="填寫匯款帳號末五碼" value="${esc(o.transfer_last5 || '')}"><button class="btn" type="submit">${o.transfer_last5 ? '更新' : '送出'}</button></form>` : ''}
       </div>`;
       const l5 = $('#l5-form');
